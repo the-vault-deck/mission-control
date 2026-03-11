@@ -1,0 +1,3543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOULBOLT // MISSION CONTROL 3.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+  :root {
+    --navy: #0b1622;
+    --navy-mid: #0f1d2e;
+    --navy-light: #152336;
+    --navy-border: #1e3048;
+    --cyan: #00ffff;
+    --cyan-dim: rgba(0,255,255,0.15);
+    --cyan-glow: rgba(0,255,255,0.4);
+    --white: #ffffff;
+    --white-dim: rgba(255,255,255,0.6);
+    --white-faint: rgba(255,255,255,0.08);
+    --green: #00ff88;
+    --red: #ff3355;
+    --amber: #ffaa00;
+    --text-body: rgba(255,255,255,0.75);
+    --text-dim: rgba(255,255,255,0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 48px;
+    background: var(--navy);
+    border-bottom: 1px solid var(--navy-border);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .wordmark {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--cyan);
+  }
+
+  .version-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--navy-border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+
+  .status-pill.online { border-color: rgba(0,255,136,0.3); color: var(--green); }
+  .status-pill.armed { border-color: rgba(0,255,255,0.3); color: var(--cyan); }
+
+  .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--cyan);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── VIEW CONTROLS ── */
+  #viewbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 38px;
+    background: var(--navy-mid);
+    border-bottom: 1px solid var(--navy-border);
+    flex-shrink: 0;
+  }
+
+  .viewbar-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .view-btn {
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .view-btn:hover { color: var(--white); border-color: var(--navy-border); }
+  .view-btn.active { color: var(--cyan); border-color: rgba(0,255,255,0.3); background: var(--cyan-dim); }
+
+  .room-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .room-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .room-tab:hover { color: var(--white); background: var(--white-faint); }
+
+  .room-tab.active {
+    color: var(--white);
+    background: var(--navy-light);
+    border-color: var(--navy-border);
+  }
+
+  .room-tab .room-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--text-dim);
+  }
+  .room-tab.active .room-dot { background: var(--cyan); }
+  .room-close {
+    margin-left: 6px;
+    font-size: 9px;
+    color: var(--text-dim);
+    line-height: 1;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  .room-close:hover { color: #ef4444; }
+  .room-view.has-expanded .agent-panel { display: none; }
+  .room-view.has-expanded .agent-panel.slot-expanded { display: flex; }
+  .agent-panel.slot-expanded { grid-column: 1 / -1; grid-row: 1 / -1; }
+
+  .add-room-btn {
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px dashed var(--navy-border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-room-btn:hover { color: var(--cyan); border-color: rgba(0,255,255,0.3); }
+
+  .viewbar-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── MAIN CONTENT ── */
+  #main {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── GRID VIEW ── */
+  .room-view {
+    display: none;
+    height: 100%;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .room-view.active { display: grid; }
+  .room-view.layout-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .room-view.layout-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+
+  /* ── AGENT PANEL ── */
+  .agent-panel {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .agent-panel:focus-within {
+    border-color: rgba(0,255,255,0.25);
+  }
+
+  .agent-panel.slot-empty {
+    border: 1px dashed var(--navy-border);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  .agent-panel.slot-empty:hover { border-color: rgba(0,255,255,0.2); }
+
+  .slot-empty-inner {
+    text-align: center;
+  }
+
+  .slot-empty-inner .plus {
+    font-size: 24px;
+    color: var(--text-dim);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .slot-empty-inner span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Panel Header */
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--navy-border);
+    flex-shrink: 0;
+  }
+
+  .agent-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .agent-badge {
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .agent-name-block {}
+
+  .agent-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .agent-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .panel-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .model-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border: 1px solid var(--navy-border);
+  }
+  .model-select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    background: var(--navy-deep);
+    border: 1px solid var(--navy-border);
+    padding: 2px 4px;
+    cursor: pointer;
+    max-width: 130px;
+    outline: none;
+  }
+  .model-select:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  .soul-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    padding: 2px 6px;
+    border: 1px solid;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+
+  .soul-tag.loaded { color: var(--cyan); border-color: rgba(0,255,255,0.3); background: var(--cyan-dim); }
+  .soul-tag.empty { color: var(--text-dim); border-color: var(--navy-border); }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.offline { background: var(--text-dim); }
+  .status-dot.error { background: var(--red); }
+
+  /* Memory strip */
+  .memory-strip {
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--navy-border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .memory-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+
+  .memory-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--white-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--navy-border) transparent;
+  }
+
+  .chat-area::-webkit-scrollbar { width: 3px; }
+  .chat-area::-webkit-scrollbar-track { background: transparent; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--navy-border); }
+
+  .msg {
+    max-width: 85%;
+    padding: 7px 10px;
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: var(--white-faint);
+    border: 1px solid var(--navy-border);
+  }
+
+  .msg.agent {
+    align-self: flex-start;
+    background: var(--navy-light);
+    border-left: 2px solid var(--cyan);
+    border-top: 1px solid var(--navy-border);
+    border-right: 1px solid var(--navy-border);
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  .msg.error {
+    align-self: flex-start;
+    background: rgba(255,51,85,0.06);
+    border-left: 2px solid var(--red);
+    border-top: 1px solid rgba(255,51,85,0.2);
+    border-right: 1px solid rgba(255,51,85,0.2);
+    border-bottom: 1px solid rgba(255,51,85,0.2);
+  }
+
+  .msg-text {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-body);
+  }
+
+  .msg.error .msg-text { color: rgba(255,100,120,0.9); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+  .msg.system-inject {
+    align-self: center;
+    background: rgba(0,255,255,0.06);
+    border: 1px solid rgba(0,255,255,0.2);
+    text-align: center;
+  }
+  .msg.system-inject .msg-text { color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; }
+
+  .msg-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .session-label {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    padding: 4px 0;
+  }
+
+  /* Typing indicator */
+  .typing {
+    display: none;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 10px;
+    background: var(--navy-light);
+    border-left: 2px solid var(--cyan);
+    border: 1px solid var(--navy-border);
+    border-left: 2px solid var(--cyan);
+    align-self: flex-start;
+  }
+
+  .typing.visible { display: flex; }
+
+  .typing-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* Input area */
+  .input-area {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-top: 1px solid var(--navy-border);
+    flex-shrink: 0;
+  }
+
+  .msg-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 9px 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    color: var(--white);
+    resize: none;
+    height: 36px;
+  }
+
+  .msg-input::placeholder { color: var(--text-dim); }
+
+  .send-btn {
+    width: 36px; height: 36px;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--navy-border);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { color: var(--cyan); background: var(--cyan-dim); }
+
+  /* ── SINGLE VIEW ── */
+  #single-view {
+    display: none;
+    height: 100%;
+    padding: 12px;
+  }
+
+  #single-view.active { display: grid; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    position: fixed;
+    left: 0; top: 86px; bottom: 0;
+    width: 200px;
+    background: var(--navy);
+    border-right: 1px solid var(--navy-border);
+    transform: translateX(-200px);
+    transition: transform 0.2s;
+    z-index: 50;
+    overflow-y: auto;
+  }
+
+  #sidebar.open { transform: translateX(0); }
+
+  .sidebar-section {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  .sidebar-label {
+    padding: 0 14px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  .agent-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .agent-row:hover { background: var(--white-faint); }
+
+  .agent-row-badge {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .agent-row-info { flex: 1; min-width: 0; }
+
+  .agent-row-name {
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .agent-row-role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  /* ── AGENT ROSTER ── */
+  #roster-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11,22,34,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #roster-modal.open { display: flex; }
+
+  .roster-box {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .roster-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .roster-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--cyan);
+  }
+
+  .roster-close {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 16px; line-height: 1;
+    transition: color 0.15s;
+  }
+  .roster-close:hover { color: var(--white); }
+
+  .roster-grid {
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .roster-agent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--navy-border);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--navy);
+  }
+
+  .roster-agent:hover { border-color: rgba(0,255,255,0.3); background: var(--navy-light); }
+  .roster-agent.selected { border-color: var(--cyan); background: var(--cyan-dim); }
+
+  .roster-agent-badge {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .roster-agent-name { font-size: 12px; font-weight: 600; }
+  .roster-agent-role { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-dim); }
+
+  /* Context menu for swapping */
+  .ctx-menu {
+    display: none;
+    position: fixed;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    z-index: 300;
+    min-width: 160px;
+  }
+  .ctx-menu.open { display: block; }
+  .ctx-item {
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-body);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .ctx-item:hover { background: var(--white-faint); color: var(--cyan); }
+  .ctx-item.danger { color: var(--red); }
+
+  /* ── NEW ROOM MODAL ── */
+  #new-room-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11,22,34,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #new-room-modal.open { display: flex; }
+
+  .new-room-box {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    width: 340px;
+    padding: 20px;
+  }
+
+  .new-room-box h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--cyan);
+    margin-bottom: 16px;
+  }
+
+  .new-room-box input {
+    width: 100%;
+    background: var(--navy);
+    border: 1px solid var(--navy-border);
+    color: var(--white);
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+
+  .new-room-box input:focus { border-color: rgba(0,255,255,0.3); }
+
+  .new-room-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn {
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .btn-ghost { color: var(--text-dim); border-color: var(--navy-border); }
+  .btn-ghost:hover { color: var(--white); }
+  .btn-primary { color: var(--cyan); border-color: rgba(0,255,255,0.3); }
+  .btn-primary:hover { background: var(--cyan-dim); }
+
+  /* ── PHILLY BLUNT indicator ── */
+  .pb-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid rgba(0,255,255,0.2);
+    background: var(--cyan-dim);
+  }
+
+  .pb-badge {
+    width: 18px; height: 18px;
+    background: var(--cyan);
+    color: var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+  }
+
+  .pb-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 0.06em;
+  }
+
+  /* scrollbar global */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--navy-border) transparent;
+  }
+
+  /* ── FOOTER ── */
+  #footer {
+    height: 24px;
+    background: var(--navy);
+    border-top: 1px solid var(--navy-border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .footer-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .footer-item .val { color: var(--text-body); }
+  .footer-item .val.green { color: var(--green); }
+  .footer-item .val.cyan { color: var(--cyan); }
+
+  /* Highlight active panel */
+  .agent-panel.focused { border-color: rgba(0,255,255,0.2); }
+
+  /* ── MODE INDICATOR BAR ── */
+  #mode-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 32px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--navy-border);
+  }
+  #mode-bar.visible { display: flex; }
+  #mode-bar.arena-mode { background: rgba(168,85,247,0.08); border-bottom-color: rgba(168,85,247,0.3); }
+  #mode-bar.boardroom-mode { background: rgba(0,255,255,0.05); border-bottom-color: rgba(0,255,255,0.2); }
+  #mode-bar.memo-mode { background: rgba(255,170,0,0.06); border-bottom-color: rgba(255,170,0,0.25); }
+
+  .mode-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+  .arena-mode .mode-label { color: #a855f7; }
+  .boardroom-mode .mode-label { color: var(--cyan); }
+  .memo-mode .mode-label { color: var(--amber); }
+
+  .mode-exit {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--navy-border);
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+  .mode-exit:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+
+  /* ── ARENA PANEL HIGHLIGHT ── */
+  .agent-panel.arena-participant { border-color: rgba(168,85,247,0.4); }
+  .agent-panel.arena-active { border-color: #a855f7; box-shadow: 0 0 8px rgba(168,85,247,0.2); }
+
+  /* ── BOARDROOM INPUT BAR ── */
+  #broadcast-bar {
+    display: none;
+    align-items: center;
+    gap: 0;
+    padding: 8px 12px;
+    border-top: 1px solid var(--navy-border);
+    background: var(--navy-mid);
+    flex-shrink: 0;
+  }
+  #broadcast-bar.visible { display: flex; }
+
+  .broadcast-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    padding: 0 10px 0 0;
+    border-right: 1px solid var(--navy-border);
+    margin-right: 10px;
+  }
+
+  .broadcast-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    color: var(--white);
+    padding: 4px 0;
+  }
+  .broadcast-input::placeholder { color: var(--text-dim); }
+
+  .broadcast-send {
+    padding: 4px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(0,255,255,0.3);
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .broadcast-send:hover { background: rgba(0,255,255,0.25); }
+
+  /* ── ARENA SETUP MODAL ── */
+  #arena-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11,22,34,0.88);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #arena-modal.open { display: flex; }
+
+  .arena-box {
+    background: var(--navy-mid);
+    border: 1px solid rgba(168,85,247,0.3);
+    width: 460px;
+  }
+
+  .arena-box-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .arena-box-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: #a855f7;
+  }
+
+  .arena-box-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .arena-field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .arena-agent-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .arena-agent-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--navy-border);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--navy);
+  }
+  .arena-agent-card:hover { border-color: rgba(168,85,247,0.4); }
+  .arena-agent-card.selected { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+
+  .arena-topic-input {
+    width: 100%;
+    background: var(--navy);
+    border: 1px solid var(--navy-border);
+    color: var(--white);
+    padding: 8px 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    outline: none;
+  }
+  .arena-topic-input:focus { border-color: rgba(168,85,247,0.4); }
+  .arena-topic-input::placeholder { color: var(--text-dim); }
+
+  .arena-rounds {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .rounds-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    border: 1px solid var(--navy-border);
+    background: var(--navy);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .rounds-btn.selected { border-color: #a855f7; color: #a855f7; background: rgba(168,85,247,0.1); }
+
+  .arena-box-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* ── MEMO MODAL ── */
+  #memo-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11,22,34,0.88);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #memo-modal.open { display: flex; }
+
+  .memo-box {
+    background: var(--navy-mid);
+    border: 1px solid rgba(255,170,0,0.25);
+    width: 520px;
+  }
+
+  .memo-box-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .memo-box-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+  }
+
+  .memo-box-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .memo-type-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .memo-type-btn {
+    flex: 1;
+    padding: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--navy-border);
+    background: var(--navy);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .memo-type-btn:hover { color: var(--white); }
+  .memo-type-btn.active { border-color: rgba(255,170,0,0.4); color: var(--amber); background: rgba(255,170,0,0.06); }
+
+  .memo-subject-input {
+    width: 100%;
+    background: var(--navy);
+    border: 1px solid var(--navy-border);
+    color: var(--white);
+    padding: 7px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    outline: none;
+  }
+  .memo-subject-input:focus { border-color: rgba(255,170,0,0.3); }
+  .memo-subject-input::placeholder { color: var(--text-dim); }
+
+  .memo-body-input {
+    width: 100%;
+    min-height: 100px;
+    background: var(--navy);
+    border: 1px solid var(--navy-border);
+    color: var(--text-body);
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+  }
+  .memo-body-input:focus { border-color: rgba(255,170,0,0.3); }
+  .memo-body-input::placeholder { color: var(--text-dim); }
+
+  .memo-recipients {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .memo-recip-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border: 1px solid var(--navy-border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .memo-recip-chip:hover { border-color: rgba(255,170,0,0.3); }
+  .memo-recip-chip.selected { border-color: rgba(255,170,0,0.4); color: var(--amber); background: rgba(255,170,0,0.06); }
+
+  .memo-box-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .memo-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  /* ── KEYS MODAL ── */
+  #keys-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11,22,34,0.88);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #keys-modal.open { display: flex; }
+
+  .keys-box {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    width: 440px;
+  }
+
+  .keys-box-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .keys-box-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--white);
+  }
+
+  .keys-box-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .key-field { display: flex; flex-direction: column; gap: 5px; }
+
+  .key-field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .key-route-badge {
+    padding: 1px 6px;
+    font-size: 8px;
+    border: 1px solid;
+  }
+
+  .key-field input {
+    width: 100%;
+    background: var(--navy);
+    border: 1px solid var(--navy-border);
+    color: var(--white);
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    outline: none;
+    letter-spacing: 0.03em;
+  }
+
+  .key-field input:focus { border-color: rgba(0,255,255,0.3); }
+  .key-field input::placeholder { color: var(--text-dim); letter-spacing: 0; }
+
+  .key-agents-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .keys-status {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .key-status-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 1px solid var(--navy-border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  .key-status-chip.set { border-color: rgba(0,255,136,0.3); color: var(--green); }
+  .key-status-chip.unset { border-color: rgba(255,51,85,0.3); color: var(--red); }
+
+  .keys-box-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .keys-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  /* Keys armed indicator in topbar */
+  .keys-btn {
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    background: transparent;
+    border: 1px solid var(--navy-border);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .keys-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+  .keys-btn.armed { color: var(--green); border-color: rgba(0,255,136,0.3); }
+  .keys-btn.partial { color: var(--amber); border-color: rgba(255,170,0,0.3); }
+  #soul-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11,22,34,0.88);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #soul-modal.open { display: flex; }
+
+  .soul-box {
+    background: var(--navy-mid);
+    border: 1px solid rgba(0,255,255,0.25);
+    width: 480px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .soul-box-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .soul-box-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--cyan);
+  }
+
+  .soul-agent-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .soul-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--navy-border);
+    flex-shrink: 0;
+  }
+
+  .soul-tab {
+    flex: 1;
+    padding: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .soul-tab:hover { color: var(--white); }
+  .soul-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+  .soul-tab-pane { display: none; padding: 14px 16px; flex: 1; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .soul-tab-pane.active { display: flex; }
+
+  .soul-drop-zone {
+    border: 2px dashed var(--navy-border);
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .soul-drop-zone:hover, .soul-drop-zone.drag-over {
+    border-color: rgba(0,255,255,0.4);
+    background: var(--cyan-dim);
+  }
+
+  .soul-drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .soul-drop-icon {
+    font-size: 20px;
+    margin-bottom: 6px;
+    color: var(--text-dim);
+  }
+
+  .soul-drop-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .soul-drop-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    opacity: 0.6;
+  }
+
+  .soul-file-loaded {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.2);
+  }
+
+  .soul-file-loaded.visible { display: flex; }
+
+  .soul-file-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    flex: 1;
+  }
+
+  .soul-file-clear {
+    background: none; border: none;
+    color: var(--text-dim); cursor: pointer;
+    font-size: 12px;
+    transition: color 0.15s;
+  }
+  .soul-file-clear:hover { color: var(--red); }
+
+  .soul-paste-area {
+    width: 100%;
+    min-height: 160px;
+    background: var(--navy);
+    border: 1px solid var(--navy-border);
+    color: var(--text-body);
+    padding: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+  }
+
+  .soul-paste-area:focus { border-color: rgba(0,255,255,0.3); }
+  .soul-paste-area::placeholder { color: var(--text-dim); }
+
+  .soul-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    padding: 4px 0;
+  }
+  .soul-status.ok { color: var(--green); }
+  .soul-status.err { color: var(--red); }
+  .soul-status.info { color: var(--text-dim); }
+
+  .soul-box-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--navy-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="topbar-left">
+    <span class="wordmark">SOULBOLT</span>
+    <span class="version-tag">MISSION CONTROL 3.9</span>
+  </div>
+  <div class="topbar-center">
+    <div class="status-pill armed"><div class="dot"></div>OPENROUTER: ARMED</div>
+    <div class="status-pill online"><div class="dot"></div>SOUL ENGINE ONLINE</div>
+  </div>
+  <div class="topbar-right">
+    <div class="pb-indicator">
+      <div class="pb-badge">PB</div>
+      <span class="pb-name">PHILLY BLUNT</span>
+    </div>
+    <div style="position:relative;display:inline-block;margin-right:6px;">
+      <button class="keys-btn" onclick="toggleAgentMenu(event)" style="color:var(--cyan);border-color:rgba(0,255,255,0.2);">⚡ AGENT ▾</button>
+      <div id="agent-mgmt-menu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--navy-mid);border:1px solid var(--navy-border);z-index:3000;min-width:160px;">
+        <div onclick="openNewAgentModal();closeAgentMenu();" style="padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan);cursor:pointer;letter-spacing:0.06em;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">+ CREATE AGENT</div>
+        <div onclick="openEditAgentModal();closeAgentMenu();" style="padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--white);cursor:pointer;letter-spacing:0.06em;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">✎ EDIT AGENT</div>
+        <div onclick="openDeleteAgentModal();closeAgentMenu();" style="padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#ef4444;cursor:pointer;letter-spacing:0.06em;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">✕ DELETE AGENT</div>
+      </div>
+    </div>
+    <button class="keys-btn" id="keys-btn" onclick="openKeysModal()">⚙ KEYS</button>
+    <div id="clock">00:00:00</div>
+  </div>
+</div>
+
+<!-- VIEWBAR -->
+<div id="viewbar">
+  <div class="viewbar-left">
+    <button class="view-btn active" onclick="setView('grid')" id="btn-grid">GRID</button>
+    <div style="width:1px;height:16px;background:var(--navy-border);margin:0 6px;"></div>
+    <button class="view-btn" onclick="openArenaSetup()" id="btn-arena" style="color:#a855f7;border-color:rgba(168,85,247,0.2);">⚔ ARENA</button>
+    <button class="view-btn" onclick="enterBoardroom()" id="btn-boardroom">▦ BOARDROOM</button>
+    <button class="view-btn" onclick="openMemoModal()" id="btn-memo" style="color:var(--amber);border-color:rgba(255,170,0,0.2);">✉ MEMO</button>
+    <div style="width:1px;height:16px;background:var(--navy-border);margin:0 6px;"></div>
+    <div class="room-tabs" id="room-tabs"></div>
+    <button class="add-room-btn" onclick="openNewRoom()">+ ROOM</button>
+  </div>
+  <div class="viewbar-right">
+    <button class="view-btn" onclick="toggleSidebar()" style="font-size:10px;">⊞ ROSTER</button>
+  </div>
+</div>
+
+<!-- MODE BAR -->
+<div id="mode-bar">
+  <span class="mode-label" id="mode-bar-label">—</span>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);" id="mode-bar-sub"></span>
+    <button class="mode-exit" onclick="exitMode()">EXIT MODE</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- ROOMS ARE INJECTED HERE -->
+</div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <div class="footer-item">SOUL ENGINE <span class="val green" style="margin-left:4px;">ONLINE</span></div>
+  <div class="footer-item">OPENROUTER <span class="val cyan" style="margin-left:4px;">ARMED</span></div>
+  <div class="footer-item">MODE <span class="val" style="margin-left:4px;" id="footer-mode">GRID</span></div>
+  <div class="footer-item">ACTIVE ROOM <span class="val cyan" style="margin-left:4px;" id="footer-room">—</span></div>
+  <div class="footer-item">BRIDGE <span class="val" style="margin-left:4px;color:#ef4444;" id="bridge-status">OFFLINE</span></div>
+  <div class="footer-item" style="margin-left:auto;">soul-engine.railway.app</div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">TIER 0</div>
+    <div class="agent-row">
+      <div class="agent-row-badge" style="background:rgba(0,255,255,0.15);color:var(--cyan);">PB</div>
+      <div class="agent-row-info">
+        <div class="agent-row-name">PHILLY BLUNT</div>
+        <div class="agent-row-role">CIO / Sovereign</div>
+      </div>
+      <div class="status-dot online"></div>
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">ROSTER</div>
+    <div id="sidebar-agents"></div>
+  </div>
+</div>
+
+<!-- ROSTER MODAL -->
+<div id="roster-modal">
+  <div class="roster-box">
+    <div class="roster-header">
+      <span class="roster-title" id="roster-title">ASSIGN AGENT — SLOT</span>
+      <button class="roster-close" onclick="closeRoster()">×</button>
+    </div>
+    <div class="roster-grid" id="roster-grid"></div>
+    <div style="padding:12px;border-top:1px solid var(--navy-border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-ghost" onclick="closeRoster()">CANCEL</button>
+      <button class="btn btn-primary" onclick="clearSlot()">CLEAR SLOT</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW ROOM MODAL -->
+<div id="new-room-modal">
+  <div class="new-room-box">
+    <h3>NEW CONFERENCE ROOM</h3>
+    <input type="text" id="new-room-name" placeholder="ROOM NAME (e.g. STRATEGY)" maxlength="24" />
+    <div class="new-room-actions">
+      <button class="btn btn-ghost" onclick="closeNewRoom()">CANCEL</button>
+      <button class="btn btn-primary" onclick="createRoom()">CREATE</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" id="ctx-assign" onclick="openRosterFromCtx()">ASSIGN AGENT</div>
+  <div class="ctx-item" id="ctx-clear" onclick="clearSlotFromCtx()">CLEAR SLOT</div>
+</div>
+
+<!-- BROADCAST BAR (Boardroom) -->
+<div id="broadcast-bar">
+  <span class="broadcast-label">ALL AGENTS</span>
+  <input class="broadcast-input" id="broadcast-input" placeholder="Message to all agents in this room..." 
+    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendBroadcast();}" />
+  <button class="broadcast-send" onclick="sendBroadcast()">▶ BROADCAST</button>
+</div>
+
+<!-- ARENA SETUP MODAL -->
+<div id="arena-modal">
+  <div class="arena-box">
+    <div class="arena-box-header">
+      <span class="arena-box-title">⚔ ARENA — CONFIGURE DEBATE</span>
+      <button class="roster-close" onclick="closeArenaSetup()">×</button>
+    </div>
+    <div class="arena-box-body">
+      <div>
+        <div class="arena-field-label">SELECT PARTICIPANTS (2 minimum)</div>
+        <div class="arena-agent-grid" id="arena-agent-grid"></div>
+      </div>
+      <div>
+        <div class="arena-field-label">DEBATE TOPIC / PROMPT</div>
+        <input class="arena-topic-input" id="arena-topic" placeholder="e.g. Should SAUVERN launch before SOULBOLT has 1000 users?" />
+      </div>
+      <div>
+        <div class="arena-field-label">ROUNDS PER AGENT</div>
+        <div class="arena-rounds">
+          <button class="rounds-btn selected" onclick="selectRounds(1)" id="rounds-1">1</button>
+          <button class="rounds-btn" onclick="selectRounds(2)" id="rounds-2">2</button>
+          <button class="rounds-btn" onclick="selectRounds(3)" id="rounds-3">3</button>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-left:6px;">round = 1 response per participant</span>
+        </div>
+      </div>
+    </div>
+    <div class="arena-box-footer">
+      <button class="btn btn-ghost" onclick="closeArenaSetup()">CANCEL</button>
+      <button class="btn" style="color:#a855f7;border-color:rgba(168,85,247,0.4);background:rgba(168,85,247,0.1);" onclick="startArena()">START ARENA</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEMO MODAL -->
+<div id="memo-modal">
+  <div class="memo-box">
+    <div class="memo-box-header">
+      <span class="memo-box-title">✉ MEMO — STAFF BROADCAST</span>
+      <button class="roster-close" onclick="closeMemoModal()">×</button>
+    </div>
+    <div class="memo-box-body">
+      <div>
+        <div class="arena-field-label">MEMO TYPE</div>
+        <div class="memo-type-row">
+          <button class="memo-type-btn active" onclick="selectMemoType('eod')" id="mtype-eod">EOD REPORT REQUEST</button>
+          <button class="memo-type-btn" onclick="selectMemoType('directive')" id="mtype-directive">DIRECTIVE</button>
+          <button class="memo-type-btn" onclick="selectMemoType('custom')" id="mtype-custom">CUSTOM</button>
+        </div>
+      </div>
+      <div>
+        <div class="arena-field-label">SUBJECT</div>
+        <input class="memo-subject-input" id="memo-subject" placeholder="SUBJECT LINE" />
+      </div>
+      <div>
+        <div class="arena-field-label">BODY</div>
+        <textarea class="memo-body-input" id="memo-body" placeholder="Memo body..."></textarea>
+      </div>
+      <div>
+        <div class="arena-field-label">SEND TO</div>
+        <div class="memo-recipients" id="memo-recipients"></div>
+      </div>
+    </div>
+    <div class="memo-box-footer">
+      <span class="memo-preview" id="memo-preview">COPYBLOCK format — sent to all selected agents</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeMemoModal()">CANCEL</button>
+        <button class="btn" style="color:var(--amber);border-color:rgba(255,170,0,0.4);background:rgba(255,170,0,0.06);" onclick="sendMemo()">TRANSMIT MEMO</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KEYS MODAL -->
+<div id="keys-modal">
+  <div class="keys-box">
+    <div class="keys-box-header">
+      <span class="keys-box-title">⚙ API KEYS</span>
+      <button class="roster-close" onclick="closeKeysModal()">×</button>
+    </div>
+    <div class="keys-box-body">
+      <div class="key-field">
+        <div class="key-field-label">
+          GEMINI API KEY
+          <span class="key-route-badge" style="color:#f59e0b;border-color:rgba(245,158,11,0.3);">GIA</span>
+        </div>
+        <input type="password" id="key-gemini" placeholder="AIza..." autocomplete="off" />
+        <div class="key-agents-note">Routes: GIA (gemini-2.0-flash) — get key at aistudio.google.com</div>
+      </div>
+      <div class="key-field">
+        <div class="key-field-label">
+          OPENROUTER API KEY
+          <span class="key-route-badge" style="color:#a855f7;border-color:rgba(168,85,247,0.3);">COUNCIL</span>
+          <span class="key-route-badge" style="color:#3b82f6;border-color:rgba(59,130,246,0.3);">DOM</span>
+          <span class="key-route-badge" style="color:#ef4444;border-color:rgba(239,68,68,0.3);">COMBAT</span>
+          <span class="key-route-badge" style="color:#10b981;border-color:rgba(16,185,129,0.3);">CHARLI</span>
+          <span class="key-route-badge" style="color:#00ffff;border-color:rgba(0,255,255,0.3);">VIRGIL</span>
+          <span class="key-route-badge" style="color:#f97316;border-color:rgba(249,115,22,0.3);">KEEL</span>
+        </div>
+        <input type="password" id="key-openrouter" placeholder="sk-or-..." autocomplete="off" />
+        <div class="key-agents-note">Routes: COUNCIL · DOM · COMBAT · GIA · CHARLI</div>
+      </div>
+      <div>
+        <div class="key-field-label" style="margin-bottom:6px;">STATUS</div>
+        <div class="keys-status" id="keys-status"></div>
+      </div>
+    </div>
+    <div class="keys-box-footer">
+      <span class="keys-note">Keys stored in memory only — never saved to disk</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeKeysModal()">CANCEL</button>
+        <button class="btn btn-primary" onclick="saveKeys()">SAVE KEYS</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOUL MODAL -->
+<div id="soul-modal">
+  <div class="soul-box">
+    <div class="soul-box-header">
+      <div>
+        <div class="soul-box-title">LOAD SOUL FILE</div>
+        <div class="soul-agent-label" id="soul-agent-label">—</div>
+      </div>
+      <button class="roster-close" onclick="closeSoulModal()">×</button>
+    </div>
+    <div class="soul-tabs">
+      <button class="soul-tab active" onclick="switchSoulTab('upload')">↑ FILE UPLOAD</button>
+      <button class="soul-tab" onclick="switchSoulTab('paste')">⌨ PASTE JSON</button>
+    </div>
+
+    <!-- UPLOAD PANE -->
+    <div class="soul-tab-pane active" id="soul-pane-upload">
+      <div class="soul-drop-zone" id="soul-drop-zone">
+        <input type="file" accept=".json,.txt,.md,.csl" id="soul-file-input" onchange="handleSoulFile(event)" />
+        <div class="soul-drop-icon">⬡</div>
+        <div class="soul-drop-label">DROP SOUL FILE OR CLICK TO BROWSE</div>
+        <div class="soul-drop-sub">.json · .txt · .md · .csl accepted</div>
+      </div>
+      <div class="soul-file-loaded" id="soul-file-loaded">
+        <span class="soul-file-name" id="soul-file-name">—</span>
+        <button class="soul-file-clear" onclick="clearSoulFile()">×</button>
+      </div>
+      <div class="soul-status info" id="soul-upload-status">NO FILE LOADED</div>
+    </div>
+
+    <!-- PASTE PANE -->
+    <div class="soul-tab-pane" id="soul-pane-paste">
+      <textarea class="soul-paste-area" id="soul-paste-input" 
+        placeholder='Paste soul JSON here...&#10;&#10;{"name":"ATLAS","role":"PM/Tech Lead","directives":[...],...}'
+      ></textarea>
+      <div class="soul-status info" id="soul-paste-status">PASTE SOUL FILE CONTENTS ABOVE</div>
+    </div>
+
+    <div class="soul-box-footer">
+      <div class="soul-status info" id="soul-chain-status">CHAIN VERIFICATION: PENDING</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeSoulModal()">CANCEL</button>
+        <button class="btn btn-primary" onclick="commitSoul()" id="soul-commit-btn">MOUNT SOUL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW AGENT MODAL -->
+<div id="new-agent-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--navy-mid);border:1px solid var(--navy-border);width:420px;max-width:95vw;padding:0;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--navy-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.1em;" id="na-modal-title">+ NEW AGENT</span>
+      <button onclick="closeNewAgentModal()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:6px;">AGENT NAME</div>
+        <input id="na-name" type="text" placeholder="e.g. RECON" maxlength="16"
+          style="width:100%;box-sizing:border-box;background:var(--navy-deep);border:1px solid var(--navy-border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;outline:none;" />
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:6px;">ROLE</div>
+        <input id="na-role" type="text" placeholder="e.g. Intelligence Analyst" maxlength="32"
+          style="width:100%;box-sizing:border-box;background:var(--navy-deep);border:1px solid var(--navy-border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;outline:none;" />
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:6px;">API ROUTE</div>
+        <select id="na-route" onchange="updateNewAgentModels()"
+          style="width:100%;box-sizing:border-box;background:var(--navy-deep);border:1px solid var(--navy-border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;outline:none;cursor:pointer;">
+          <option value="openrouter">OpenRouter</option>
+          <option value="gemini">Gemini</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:6px;">MODEL</div>
+        <select id="na-model"
+          style="width:100%;box-sizing:border-box;background:var(--navy-deep);border:1px solid var(--navy-border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;outline:none;cursor:pointer;">
+        </select>
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:6px;">BADGE COLOR</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="na-colors">
+          <div class="na-color-swatch" data-color="#00ffff" style="width:22px;height:22px;background:#00ffff;cursor:pointer;border:2px solid #00ffff;" onclick="selectAgentColor('#00ffff',this)"></div>
+          <div class="na-color-swatch" data-color="#a855f7" style="width:22px;height:22px;background:#a855f7;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#a855f7',this)"></div>
+          <div class="na-color-swatch" data-color="#3b82f6" style="width:22px;height:22px;background:#3b82f6;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#3b82f6',this)"></div>
+          <div class="na-color-swatch" data-color="#ef4444" style="width:22px;height:22px;background:#ef4444;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#ef4444',this)"></div>
+          <div class="na-color-swatch" data-color="#f59e0b" style="width:22px;height:22px;background:#f59e0b;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#f59e0b',this)"></div>
+          <div class="na-color-swatch" data-color="#10b981" style="width:22px;height:22px;background:#10b981;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#10b981',this)"></div>
+          <div class="na-color-swatch" data-color="#f97316" style="width:22px;height:22px;background:#f97316;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#f97316',this)"></div>
+          <div class="na-color-swatch" data-color="#ec4899" style="width:22px;height:22px;background:#ec4899;cursor:pointer;border:2px solid transparent;" onclick="selectAgentColor('#ec4899',this)"></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--navy-border);display:flex;justify-content:flex-end;gap:8px;">
+      <button onclick="closeNewAgentModal()" style="background:none;border:1px solid var(--navy-border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:7px 16px;cursor:pointer;letter-spacing:0.06em;">CANCEL</button>
+      <button id="na-submit-btn" onclick="submitAgentModal()" style="background:var(--cyan);border:none;color:var(--navy-deep);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:7px 16px;cursor:pointer;letter-spacing:0.06em;">CREATE AGENT</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE AGENT MODAL -->
+<div id="delete-agent-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:var(--navy-mid);border:1px solid var(--navy-border);width:380px;max-width:95vw;padding:0;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--navy-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;letter-spacing:0.1em;">✕ DELETE AGENT</span>
+      <button onclick="closeDeleteAgentModal()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div style="padding:20px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:8px;">SELECT AGENT TO DELETE</div>
+      <select id="delete-agent-select" style="width:100%;box-sizing:border-box;background:var(--navy-deep);border:1px solid var(--navy-border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;outline:none;cursor:pointer;"></select>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#ef4444;margin-top:12px;opacity:0.7;">WARNING: This removes the agent permanently from this session.</div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--navy-border);display:flex;justify-content:flex-end;gap:8px;">
+      <button onclick="closeDeleteAgentModal()" style="background:none;border:1px solid var(--navy-border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:7px 16px;cursor:pointer;letter-spacing:0.06em;">CANCEL</button>
+      <button onclick="confirmDeleteAgent()" style="background:#ef4444;border:none;color:var(--white);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:7px 16px;cursor:pointer;letter-spacing:0.06em;">DELETE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── AGENT DEFINITIONS ──
+// ── CONFIG — SET YOUR KEYS HERE ──
+const CONFIG = {
+  openrouterKey: '',  // Everyone except Gia — OpenRouter
+  geminiKey: '',      // Gia — Gemini API direct
+};
+
+// ── BRIDGE CONFIG ──
+// Run bridge.py on your machine first: python bridge.py
+const BRIDGE = {
+  url: 'http://localhost:7070',
+  enabled: true,  // set false if bridge isn't running
+};
+
+async function bridgeGet(endpoint) {
+  if (!BRIDGE.enabled) return null;
+  try {
+    const r = await fetch(`${BRIDGE.url}${endpoint}`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function bridgePost(endpoint, data) {
+  if (!BRIDGE.enabled) return null;
+  try {
+    const r = await fetch(`${BRIDGE.url}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+// Auto-load soul from bridge when agent is assigned to a slot
+async function autoLoadSoul(agentId) {
+  if (agentSouls[agentId]?.raw) return; // already loaded
+  const res = await bridgeGet(`/soul?agent=${agentId}`);
+  if (res && res.soul) {
+    agentSouls[agentId] = { raw: res.soul, parsed: null };
+    const agent = AGENTS.find(a => a.id === agentId);
+    if (agent) agent.soulLoaded = true;
+    showBridgeToast(`SOUL MOUNTED — ${agentId.toUpperCase()}`);
+    renderSidebar();
+    renderMainArea();
+  }
+}
+
+function showBridgeToast(msg) {
+  let t = document.getElementById('bridge-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'bridge-toast';
+    t.style.cssText = `position:fixed;bottom:60px;right:16px;background:rgba(0,255,255,0.12);
+      border:1px solid rgba(0,255,255,0.3);color:#00ffff;font-family:'JetBrains Mono',monospace;
+      font-size:10px;padding:8px 14px;z-index:9999;letter-spacing:0.08em;pointer-events:none;
+      transition:opacity 0.4s;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+// Check bridge on load
+(async () => {
+  const res = await bridgeGet('/health');
+  if (res) {
+    showBridgeToast('BRIDGE ONLINE');
+    // Update footer
+    const el = document.getElementById('bridge-status');
+    if (el) { el.textContent = 'BRIDGE'; el.className = 'val green'; }
+    // Pre-check which souls are on disk
+    const souls = await bridgeGet('/list-souls');
+    if (souls?.souls) {
+      souls.souls.forEach(id => {
+        const agent = AGENTS.find(a => a.id === id);
+        if (agent) agent.soulOnDisk = true;
+      });
+    }
+  }
+})();
+
+// ── MODEL OPTIONS per route (for per-slot selector) ──
+const MODEL_OPTIONS = {
+  anthropic:   ['claude-sonnet-4-20250514', 'claude-opus-4-5', 'claude-haiku-4-5-20251001'],
+  gemini:      ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro'],
+  openrouter:  ['x-ai/grok-3', 'x-ai/grok-3-mini', 'openai/gpt-4o', 'openai/gpt-4o-mini', 'anthropic/claude-sonnet-4', 'anthropic/claude-haiku-4-5', 'google/gemini-2.0-flash-exp:free', 'meta-llama/llama-3.3-70b-instruct:free'],
+  openai:      ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+};
+
+// ── AGENTS ──
+const AGENTS = [
+  { id: 'atlas-oracle', name: 'ATLAS — ORACLE', role: 'Context Retrieval', badge: 'ATO', color: '#00ffff', model: 'openai/gpt-4o', tier: 1, soulLoaded: false, apiRoute: 'openrouter' },
+  { id: 'council', name: 'COUNCIL', role: 'Applied Realities', badge: 'CAR', color: '#a855f7', model: 'google/gemini-2.0-flash-exp:free', tier: 1,   soulLoaded: false, apiRoute: 'openrouter' },
+  { id: 'dom',     name: 'DOM',     role: 'Intel / Optim',  badge: 'DOM', color: '#3b82f6', model: 'x-ai/grok-3',                      tier: 1,   soulLoaded: false, apiRoute: 'openrouter' },
+  { id: 'combat',  name: 'COMBAT',  role: 'Marketing',      badge: 'CMB', color: '#ef4444', model: 'x-ai/grok-3',                      tier: 1.5, soulLoaded: false, apiRoute: 'openrouter' },
+  { id: 'virgil',  name: 'VIRGIL',  role: 'Tech Architect', badge: 'VIR', color: '#00ffff', model: 'anthropic/claude-sonnet-4',          tier: 2,   soulLoaded: true,  apiRoute: 'openrouter' },
+  { id: 'gia',     name: 'GIA',     role: 'Visual Design',  badge: 'GIA', color: '#f59e0b', model: 'gemini-2.0-flash',                 tier: 2,   soulLoaded: false, apiRoute: 'gemini'     },
+  { id: 'charli',  name: 'CHARLI',  role: 'QA / EOD',       badge: 'CHA', color: '#10b981', model: 'openai/gpt-4o',                    tier: 2,   soulLoaded: false, apiRoute: 'openrouter' },
+  { id: 'keel',    name: 'KEEL',    role: 'Structural Arch', badge: 'KEL', color: '#f97316', model: 'openai/gpt-4o',                    tier: 2,   soulLoaded: false, apiRoute: 'openrouter' },
+];
+
+// ── STATE ──
+let rooms = [];
+let activeRoomId = null;
+let currentView = 'grid';
+let pendingSlot = null; // { roomId, slotIndex }
+let ctxPendingSlot = null;
+let singleViewAgent = null;
+
+// Soul state: keyed by agentId
+const agentSouls = {}; // { agentId: { raw: string, parsed: object|null } }
+let pendingSoulSlot = null; // { roomId, slotIndex, agentId }
+let pendingSoulContent = null; // string
+
+// ── PERSISTENCE ──
+const CUSTOM_AGENTS_KEY = 'mc3_custom_agents';
+const ROOMS_KEY = 'mc3_rooms';
+
+function saveCustomAgents() {
+  const custom = AGENTS.filter(a => a.id.startsWith('custom_'));
+  localStorage.setItem(CUSTOM_AGENTS_KEY, JSON.stringify(custom));
+}
+
+function loadCustomAgents() {
+  try {
+    const saved = localStorage.getItem(CUSTOM_AGENTS_KEY);
+    if (!saved) return;
+    JSON.parse(saved).forEach(a => {
+      if (!AGENTS.find(x => x.id === a.id)) AGENTS.push(a);
+    });
+  } catch(e) { console.warn('loadCustomAgents failed', e); }
+}
+
+function saveRooms() {
+  try {
+    const slim = rooms.map(r => ({ id: r.id, name: r.name, slots: r.slots }));
+    localStorage.setItem(ROOMS_KEY, JSON.stringify(slim));
+  } catch(e) { console.warn('saveRooms failed', e); }
+}
+
+function loadRooms() {
+  try {
+    const saved = localStorage.getItem(ROOMS_KEY);
+    if (!saved) return false;
+    const parsed = JSON.parse(saved);
+    if (parsed && parsed.length > 0) {
+      rooms = parsed.map(r => ({
+        ...r,
+        messages: [{}, {}, {}, {}]
+      }));
+      return true;
+    }
+  } catch(e) { console.warn('loadRooms failed', e); }
+  return false;
+}
+
+// ── ROOM MANAGEMENT ──
+function createRoom(name) {
+  if (!name) {
+    name = document.getElementById('new-room-name').value.trim().toUpperCase();
+    if (!name) name = `ROOM ${rooms.length + 1}`;
+    closeNewRoom();
+  }
+  const id = 'room_' + Date.now();
+  const room = {
+    id,
+    name,
+    slots: [null, null, null, null], // up to 4 agents
+    messages: [{}, {}, {}, {}],      // per-slot message history
+  };
+  rooms.push(room);
+  saveRooms();
+  renderRoomTabs();
+  setActiveRoom(id);
+}
+
+let newAgentColor = '#00ffff';
+
+// ── AGENT MGMT MENU ──
+let agentModalMode = 'create'; // 'create' | 'edit'
+let editAgentId = null;
+
+function toggleAgentMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('agent-mgmt-menu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+function closeAgentMenu() {
+  document.getElementById('agent-mgmt-menu').style.display = 'none';
+}
+document.addEventListener('click', () => closeAgentMenu());
+
+function openNewAgentModal() {
+  agentModalMode = 'create';
+  editAgentId = null;
+  document.getElementById('na-modal-title').textContent = '+ NEW AGENT';
+  document.getElementById('na-submit-btn').textContent = 'CREATE AGENT';
+  document.getElementById('na-name').value = '';
+  document.getElementById('na-role').value = '';
+  document.getElementById('na-route').value = 'openrouter';
+  newAgentColor = '#00ffff';
+  document.querySelectorAll('.na-color-swatch').forEach(s => {
+    s.style.border = s.dataset.color === '#00ffff' ? '2px solid white' : '2px solid transparent';
+  });
+  updateNewAgentModels();
+  document.getElementById('new-agent-modal').style.display = 'flex';
+}
+
+function openEditAgentModal() {
+  const sel = document.createElement('div');
+  sel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  sel.id = 'pick-agent-overlay';
+  sel.innerHTML = `
+    <div style="background:var(--navy-mid);border:1px solid var(--navy-border);width:340px;padding:0;">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--navy-border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.1em;">✎ SELECT AGENT TO EDIT</span>
+        <button onclick="document.getElementById('pick-agent-overlay').remove()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;">×</button>
+      </div>
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">
+        ${AGENTS.map(a => `<div onclick="loadAgentForEdit('${a.id}')" style="padding:8px 10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;border:1px solid var(--navy-border);display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">
+          <span style="background:${a.color}22;color:${a.color};padding:2px 6px;font-size:9px;font-weight:700;">${a.badge}</span>
+          <span style="color:var(--white);">${a.name}</span>
+          <span style="color:var(--text-dim);font-size:9px;">${a.role}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(sel);
+}
+
+function loadAgentForEdit(agentId) {
+  document.getElementById('pick-agent-overlay')?.remove();
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+  agentModalMode = 'edit';
+  editAgentId = agentId;
+  document.getElementById('na-modal-title').textContent = '✎ EDIT AGENT';
+  document.getElementById('na-submit-btn').textContent = 'SAVE CHANGES';
+  document.getElementById('na-name').value = agent.name;
+  document.getElementById('na-role').value = agent.role;
+  document.getElementById('na-route').value = agent.apiRoute || 'openrouter';
+  newAgentColor = agent.color;
+  document.querySelectorAll('.na-color-swatch').forEach(s => {
+    s.style.border = s.dataset.color === agent.color ? '2px solid white' : '2px solid transparent';
+  });
+  updateNewAgentModels();
+  document.getElementById('na-model').value = agent.model;
+  document.getElementById('new-agent-modal').style.display = 'flex';
+}
+
+function submitAgentModal() {
+  if (agentModalMode === 'edit') {
+    saveAgentEdits();
+  } else {
+    createNewAgent();
+  }
+}
+
+function saveAgentEdits() {
+  const name = document.getElementById('na-name').value.trim().toUpperCase();
+  const role = document.getElementById('na-role').value.trim();
+  const route = document.getElementById('na-route').value;
+  const model = document.getElementById('na-model').value;
+  if (!name) { alert('Agent name required.'); return; }
+  const agent = AGENTS.find(a => a.id === editAgentId);
+  if (!agent) return;
+  agent.name = name;
+  agent.role = role;
+  agent.apiRoute = route;
+  agent.model = model;
+  agent.color = newAgentColor;
+  agent.badge = name.substring(0, 3);
+  closeNewAgentModal();
+  renderSidebar();
+  renderMainArea();
+}
+
+function openDeleteAgentModal() {
+  const sel = document.getElementById('delete-agent-select');
+  sel.innerHTML = AGENTS.map(a => `<option value="${a.id}">[${a.badge}] ${a.name} — ${a.role}</option>`).join('');
+  document.getElementById('delete-agent-modal').style.display = 'flex';
+}
+
+function closeDeleteAgentModal() {
+  document.getElementById('delete-agent-modal').style.display = 'none';
+}
+
+function confirmDeleteAgent() {
+  const agentId = document.getElementById('delete-agent-select').value;
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+  if (!confirm(`Delete ${agent.name}? This cannot be undone.`)) return;
+  const idx = AGENTS.indexOf(agent);
+  AGENTS.splice(idx, 1);
+  rooms.forEach(room => {
+    room.slots = room.slots.map(s => s === agentId ? null : s);
+  });
+  saveCustomAgents();
+  saveRooms();
+  closeDeleteAgentModal();
+  renderSidebar();
+  renderMainArea();
+}
+
+function closeNewAgentModal() {
+  document.getElementById('new-agent-modal').style.display = 'none';
+}
+
+function updateNewAgentModels() {
+  const route = document.getElementById('na-route').value;
+  const sel = document.getElementById('na-model');
+  const opts = MODEL_OPTIONS[route] || [];
+  sel.innerHTML = opts.map(m => `<option value="${m}">${m.split('/').pop()}</option>`).join('');
+}
+
+function selectAgentColor(color, el) {
+  newAgentColor = color;
+  document.querySelectorAll('.na-color-swatch').forEach(s => {
+    s.style.border = s.dataset.color === color ? '2px solid white' : '2px solid transparent';
+  });
+}
+
+function createNewAgent() {
+  const name = document.getElementById('na-name').value.trim().toUpperCase();
+  const role = document.getElementById('na-role').value.trim();
+  const route = document.getElementById('na-route').value;
+  const model = document.getElementById('na-model').value;
+  if (!name || !role || !model) return;
+  const id = 'custom_' + Date.now();
+  const badge = name.substring(0, 3);
+  AGENTS.push({ id, name, role, badge, color: newAgentColor, model, tier: 1, soulLoaded: false, apiRoute: route });
+  saveCustomAgents();
+  closeNewAgentModal();
+  renderSidebar();
+}
+
+function openNewRoom() {
+  document.getElementById('new-room-name').value = '';
+  document.getElementById('new-room-modal').classList.add('open');
+  setTimeout(() => document.getElementById('new-room-name').focus(), 100);
+}
+
+function closeNewRoom() {
+  document.getElementById('new-room-modal').classList.remove('open');
+}
+
+function setActiveRoom(id) {
+  activeRoomId = id;
+  renderRoomTabs();
+  renderMainArea();
+  document.getElementById('footer-room').textContent = rooms.find(r => r.id === id)?.name || '—';
+}
+
+function renderRoomTabs() {
+  const container = document.getElementById('room-tabs');
+  container.innerHTML = '';
+  rooms.forEach(room => {
+    const btn = document.createElement('button');
+    btn.className = 'room-tab' + (room.id === activeRoomId ? ' active' : '');
+    btn.innerHTML = `<span class="room-dot"></span>${room.name}${rooms.length > 1 ? `<span class="room-close" onclick="deleteRoom(event,'${room.id}')" title="Close room">✕</span>` : ''}`;
+    btn.onclick = () => setActiveRoom(room.id);
+    container.appendChild(btn);
+  });
+}
+
+// ── MAIN AREA RENDER ──
+function deleteRoom(e, roomId) {
+  e.stopPropagation();
+  if (rooms.length <= 1) return;
+  rooms = rooms.filter(r => r.id !== roomId);
+  if (activeRoomId === roomId) activeRoomId = rooms[0].id;
+  renderRoomTabs();
+  renderMainArea();
+}
+function renderMainArea() {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  if (currentView === 'single' && singleViewAgent !== null) {
+    renderSingleView(main);
+    return;
+  }
+
+  if (!activeRoomId) return;
+  const room = rooms.find(r => r.id === activeRoomId);
+  if (!room) return;
+
+  const grid = document.createElement('div');
+  grid.className = 'room-view active layout-4';
+  grid.id = 'grid_' + room.id;
+
+  for (let i = 0; i < 4; i++) {
+    const agentId = room.slots[i];
+    const agent = agentId ? AGENTS.find(a => a.id === agentId) : null;
+    const panel = agent ? buildAgentPanel(room, i, agent) : buildEmptySlot(room, i);
+    grid.appendChild(panel);
+  }
+
+  main.appendChild(grid);
+}
+
+function toggleExpandSlot(roomId, slotIndex, btn) {
+  const panel = document.getElementById(`panel_${roomId}_${slotIndex}`);
+  const grid = document.getElementById(`grid_${roomId}`);
+  if (!panel || !grid) return;
+  const isExpanded = panel.classList.contains('slot-expanded');
+  // collapse any other expanded panel in this grid first
+  grid.querySelectorAll('.slot-expanded').forEach(p => {
+    p.classList.remove('slot-expanded');
+    const b = p.querySelector('[title="Expand / collapse"]');
+    if (b) b.textContent = '⤢';
+  });
+  grid.classList.remove('has-expanded');
+  if (!isExpanded) {
+    panel.classList.add('slot-expanded');
+    grid.classList.add('has-expanded');
+    btn.textContent = '⤡';
+  } else {
+    btn.textContent = '⤢';
+  }
+}
+
+function buildEmptySlot(room, slotIndex) {
+  const div = document.createElement('div');
+  div.className = 'agent-panel slot-empty';
+  div.innerHTML = `
+    <div class="slot-empty-inner">
+      <div class="plus">+</div>
+      <span>ASSIGN AGENT</span>
+    </div>
+  `;
+  div.onclick = () => openRoster(room.id, slotIndex);
+  return div;
+}
+
+function buildAgentPanel(room, slotIndex, agent) {
+  const div = document.createElement('div');
+  div.className = 'agent-panel';
+  div.id = `panel_${room.id}_${slotIndex}`;
+
+  // init message store
+  if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [], typing: false };
+
+  const msgs = room.messages[slotIndex].history || [];
+  const soulClass = agent.soulLoaded ? 'loaded' : 'empty';
+  const soulText = agent.soulLoaded ? '● SOUL' : '○ SOUL';
+
+  div.innerHTML = `
+    <div class="panel-header">
+      <div class="agent-identity">
+        <div class="agent-badge" style="background:${agent.color}22;color:${agent.color};">${agent.badge}</div>
+        <div class="agent-name-block">
+          <div class="agent-name" style="color:${agent.color};">${agent.name}</div>
+          <div class="agent-role">${agent.role}</div>
+        </div>
+      </div>
+      <div class="panel-meta">
+        <select class="model-select" id="msel_${room.id}_${slotIndex}" onchange="changeModel('${room.id}', ${slotIndex}, this.value)" title="Switch model">
+          ${(MODEL_OPTIONS[agent.apiRoute] || [agent.model]).map(m => `<option value="${m}" ${m === agent.model ? "selected" : ""}>${m.split("/").pop()}</option>`).join("")}
+        </select>
+        <span class="soul-tag ${soulClass}" title="Load soul file" onclick="openSoulModal('${room.id}', ${slotIndex})" style="cursor:pointer;">${soulText}</span>
+        <div class="status-dot ${agent.soulLoaded ? 'online' : 'offline'}" id="sdot_${room.id}_${slotIndex}"></div>
+        <button style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:10px;padding:2px 4px;" 
+          title="Swap agent" onclick="openCtxMenu(event, '${room.id}', ${slotIndex})">⋯</button>
+        <button style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;line-height:1;" 
+          title="Expand / collapse" onclick="toggleExpandSlot('${room.id}', ${slotIndex}, this)">⤢</button>
+      </div>
+    </div>
+    <div class="memory-strip">
+      <span class="memory-label">HOT MEMORY</span>
+      <span class="memory-value" id="mem_${room.id}_${slotIndex}">NO HOT MEMORY</span>
+    </div>
+    <div class="chat-area" id="chat_${room.id}_${slotIndex}">
+      <div class="session-label">SESSION READY — OPENROUTER ARMED</div>
+    </div>
+    <div class="input-area">
+      <textarea class="msg-input" 
+        id="input_${room.id}_${slotIndex}" 
+        placeholder="Message ${agent.name}..." 
+        rows="1"
+        onkeydown="handleKey(event, '${room.id}', ${slotIndex})"
+      ></textarea>
+      <button class="send-btn" onclick="sendMessage('${room.id}', ${slotIndex})">▶</button>
+    </div>
+    <div class="panel-bridge-bar" id="bridgebar_${room.id}_${slotIndex}" style="display:flex;gap:6px;padding:6px 10px;border-top:1px solid var(--navy-border);background:rgba(0,0,0,0.2);">
+      <button onclick="fileEOD('${room.id}', ${slotIndex})"
+        style="flex:1;background:rgba(0,255,255,0.08);border:1px solid rgba(0,255,255,0.2);color:var(--cyan);
+        font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;"
+        title="Agent writes EOD memo — filed to soul-staging/eod/">
+        ↓ FILE EOD
+      </button>
+      <button onclick="readMyMemos('${room.id}', ${slotIndex})"
+        style="flex:1;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.15);color:var(--text-dim);
+        font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;"
+        title="Load this agent's most recent EOD + latest ALL_STAFF memo">
+        ↑ READ MEMOS
+      </button>
+      <button onclick="fetchFile('${room.id}', ${slotIndex})"
+        style="flex:1;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.15);color:var(--text-dim);
+        font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;"
+        title="Fetch a specific file by exact filename">
+        ↑ FETCH FILE
+      </button>
+      <button onclick="proposeSoulDelta('${room.id}', ${slotIndex})"
+        style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);color:#a855f7;
+        font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;"
+        title="File a soul update proposal for FORGE review">
+        ✦ SOUL Δ
+      </button>
+    </div>
+  `;
+
+  return div;
+}
+
+// ── BRIDGE ACTIONS ──
+
+async function fileEOD(roomId, slotIndex) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const agentId = room.slots[slotIndex];
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+
+  // Grab the full chat history for this slot and format as EOD
+  const history = room.messages[slotIndex]?.history || [];
+  if (history.length === 0) {
+    showBridgeToast('NO MESSAGES TO FILE');
+    return;
+  }
+
+  // Ask the agent to write an EOD in COPYBLOCK format first
+  const eodPrompt = `Write an EOD report for today's session in COPYBLOCK format. Include: what was accomplished, decisions made, blockers, and top priority for next session. Base it on our conversation above.`;
+  
+  appendMessage(roomId, slotIndex, 'user', '[ SYSTEM: EOD FILE REQUEST ]');
+  showTyping(roomId, slotIndex, true);
+
+  const eodHistory = [...history, { role: 'user', content: eodPrompt }];
+  
+  // We'll intercept the response and file it
+  room.messages[slotIndex]._filingEOD = true;
+  callAgent(roomId, slotIndex, agent, eodHistory);
+}
+
+// Called after agent responds when _filingEOD flag is set
+async function fileEODContent(agentId, content) {
+  const today = new Date().toISOString().split('T')[0];
+  const res = await bridgePost('/write-eod', {
+    agent: agentId,
+    content: content,
+    date: today,
+  });
+  if (res?.status === 'filed') {
+    showBridgeToast(`EOD FILED — ${agentId.toUpperCase()}`);
+  } else {
+    showBridgeToast('BRIDGE OFFLINE — EOD NOT FILED');
+  }
+}
+
+async function readMyMemos(roomId, slotIndex) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const agentId = room.slots[slotIndex];
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+
+  const res = await bridgeGet(`/read-eod?agent=${agentId}`);
+
+  if (!res) {
+    showBridgeToast('BRIDGE OFFLINE');
+    return;
+  }
+  if (res.memos.length === 0) {
+    showBridgeToast(`NO MEMOS FOUND FOR ${agent.name}`);
+    return;
+  }
+
+  const combined = res.memos.map(m => `=== ${m.file} ===\n${m.content}`).join('\n\n');
+  const injectMsg = `[MEMOS LOADED — ${res.memos.length} file(s)]\n\n${combined}`;
+
+  if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [] };
+  room.messages[slotIndex].history.push({ role: 'user', content: injectMsg });
+
+  appendMessage(roomId, slotIndex, 'system-inject',
+    `📂 ${res.memos.length} MEMO(S) LOADED — ${res.memos.map(m => m.file).join(', ')}`);
+  showBridgeToast(`MEMOS LOADED — ${agent.name}`);
+}
+
+async function fetchFile(roomId, slotIndex) {
+  const filename = prompt('FETCH FILE\n\nEnter exact filename:\n(e.g. EOD_ATLAS_20260309_1430.csl)');
+  if (!filename || !filename.trim()) return;
+
+  const res = await bridgeGet(`/fetch-file?name=${encodeURIComponent(filename.trim())}`);
+
+  if (!res) {
+    showBridgeToast('BRIDGE OFFLINE');
+    return;
+  }
+  if (res.error) {
+    showBridgeToast(`NOT FOUND: ${filename.trim()}`);
+    return;
+  }
+
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+
+  const injectMsg = `[FILE LOADED — ${res.file}]\n\n${res.content}`;
+  if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [] };
+  room.messages[slotIndex].history.push({ role: 'user', content: injectMsg });
+
+  appendMessage(roomId, slotIndex, 'system-inject', `📂 FILE LOADED — ${res.file}`);
+  showBridgeToast(`LOADED — ${res.file}`);
+}
+
+async function proposeSoulDelta(roomId, slotIndex) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const agentId = room.slots[slotIndex];
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+
+  const delta = prompt(`SOUL DELTA — ${agent.name}\n\nDescribe proposed soul update (FORGE will review):`);
+  if (!delta) return;
+  const reason = prompt('Reason for update:') || 'Session-derived update';
+
+  const res = await bridgePost('/write-soul-delta', {
+    agent: agentId,
+    delta: delta,
+    reason: reason,
+  });
+
+  if (res?.status === 'proposal_filed') {
+    showBridgeToast(`SOUL Δ FILED — FORGE REVIEW PENDING`);
+  } else {
+    showBridgeToast('BRIDGE OFFLINE — DELTA NOT FILED');
+  }
+}
+
+// ── MESSAGING ──
+function handleKey(e, roomId, slotIndex) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage(roomId, slotIndex);
+  }
+}
+
+function sendMessage(roomId, slotIndex) {
+  const input = document.getElementById(`input_${roomId}_${slotIndex}`);
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  appendMessage(roomId, slotIndex, 'user', text);
+  showTyping(roomId, slotIndex, true);
+
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const agentId = room.slots[slotIndex];
+  const agent = AGENTS.find(a => a.id === agentId);
+
+  // Store in history
+  if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [] };
+  room.messages[slotIndex].history = room.messages[slotIndex].history || [];
+  room.messages[slotIndex].history.push({ role: 'user', content: text });
+
+  // Update hot memory
+  const memEl = document.getElementById(`mem_${roomId}_${slotIndex}`);
+  if (memEl) memEl.textContent = text.substring(0, 60) + (text.length > 60 ? '...' : '');
+
+  callAgent(roomId, slotIndex, agent, room.messages[slotIndex].history);
+}
+
+async function callAgent(roomId, slotIndex, agent, history) {
+  const systemPrompt = getAgentSystem(agent);
+  const route = agent.apiRoute || 'openrouter';
+
+  // Key check
+  if (route === 'openrouter' && !CONFIG.openrouterKey) {
+    showTyping(roomId, slotIndex, false);
+    appendMessage(roomId, slotIndex, 'error', 'OpenRouter API key not set. Click ⚙ KEYS in the top bar to add it.');
+    return;
+  }
+  if (route === 'gemini' && !CONFIG.geminiKey) {
+    showTyping(roomId, slotIndex, false);
+    appendMessage(roomId, slotIndex, 'error', 'Gemini API key not set. Click ⚙ KEYS in the top bar to add it.');
+    return;
+  }
+
+  try {
+    let resp;
+
+    if (route === 'gemini') {
+      // Direct Gemini API — Gia
+      const geminiHistory = history.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+      resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${agent.model}:generateContent?key=${CONFIG.geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiHistory,
+          generationConfig: { maxOutputTokens: 1000 }
+        })
+      });
+      const data = await resp.json();
+      showTyping(roomId, slotIndex, false);
+      if (data.candidates && data.candidates[0]) {
+        const reply = data.candidates[0].content.parts[0].text;
+        appendMessage(roomId, slotIndex, 'agent', reply);
+        const room = rooms.find(r => r.id === roomId);
+        if (room && room.messages[slotIndex]) {
+          room.messages[slotIndex].history.push({ role: 'assistant', content: reply });
+          if (room.messages[slotIndex]._filingEOD) {
+            room.messages[slotIndex]._filingEOD = false;
+            fileEODContent(agentId, reply);
+          }
+        }
+      } else if (data.error) {
+        appendMessage(roomId, slotIndex, 'error', data.error.message || 'Gemini API error');
+      }
+
+    } else {
+      resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${CONFIG.openrouterKey}`,
+          'HTTP-Referer': 'https://soulbolt.ai',
+          'X-Title': 'SOULBOLT Mission Control',
+        },
+        body: JSON.stringify({
+          model: agent.model,
+          max_tokens: 1000,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...history.map(m => ({ role: m.role, content: m.content }))
+          ]
+        })
+      });
+      const data = await resp.json();
+      showTyping(roomId, slotIndex, false);
+      if (data.choices && data.choices[0]) {
+        const reply = data.choices[0].message.content;
+        appendMessage(roomId, slotIndex, 'agent', reply);
+        const room = rooms.find(r => r.id === roomId);
+        if (room && room.messages[slotIndex]) {
+          room.messages[slotIndex].history.push({ role: 'assistant', content: reply });
+          if (room.messages[slotIndex]._filingEOD) {
+            room.messages[slotIndex]._filingEOD = false;
+            fileEODContent(agentId, reply);
+          }
+        }
+      } else if (data.error) {
+        appendMessage(roomId, slotIndex, 'error', data.error.message || 'OpenRouter error');
+      }
+    }
+
+  } catch (err) {
+    showTyping(roomId, slotIndex, false);
+    appendMessage(roomId, slotIndex, 'error', err.message);
+  }
+}
+
+function changeModel(roomId, slotIndex, newModel) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const agentId = room.slots[slotIndex];
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (agent) agent.model = newModel;
+}
+
+function getAgentSystem(agent) {
+  // If a soul is loaded for this agent, use it as the system prompt
+  if (agentSouls[agent.id] && agentSouls[agent.id].raw) {
+    const soul = agentSouls[agent.id];
+    // If it's valid JSON with a directives/system field, extract it
+    if (soul.parsed) {
+      const p = soul.parsed;
+      const parts = [];
+      if (p.name || p.role) parts.push(`You are ${p.name || agent.name}, ${p.role || agent.role} at mAIn St. Solutions.`);
+      if (p.directives && Array.isArray(p.directives)) parts.push(p.directives.join(' '));
+      if (p.system) parts.push(p.system);
+      if (p.context) parts.push(p.context);
+      if (p.priorities && Array.isArray(p.priorities)) parts.push('Current priorities: ' + p.priorities.join(', '));
+      if (p.append_log && Array.isArray(p.append_log)) {
+        const latest = p.append_log[p.append_log.length - 1];
+        if (latest) parts.push('Latest log: ' + (latest.note || JSON.stringify(latest)));
+      }
+      if (parts.length > 0) return parts.join('\n\n');
+    }
+    // Raw string fallback — treat entire content as system prompt
+    return soul.raw;
+  }
+
+  const base = `You are ${agent.name}, ${agent.role} at mAIn St. Solutions. You are an AI team member operating inside Mission Control 3.0. Be direct, efficient, and expert in your domain. No corporate warmth. No hedging. Speak with authority. The company builds SOULBOLT — an append-only cryptographic identity platform. You are part of the War Council.`;
+  const overrides = {
+    council: base + ' You are the Council of Applied Realities — perception engineering, narrative architecture, mass psychology.',
+    dom: base + ' You are Intel/Optimization — deep research, competitive analysis, prompt engineering.',
+    combat: base + ' You are Marketing/Combat — brand voice, competitive positioning, anti-beige-slop enforcement.',
+    virgil: base + ' You are Technical Architect — system design, code architecture, SOULBOLT platform structure.',
+    gia: base + ' You are Visual Design Lead — brand identity, visual systems, UI direction.',
+    charli: base + ' You are QA Lead / EOD — quality assurance, end-of-day reports, platform testing.',
+  };
+  return overrides[agent.id] || base;
+}
+
+function appendMessage(roomId, slotIndex, type, text) {
+  const chat = document.getElementById(`chat_${roomId}_${slotIndex}`);
+  if (!chat) return;
+
+  const msg = document.createElement('div');
+  msg.className = `msg ${type}`;
+
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+  msg.innerHTML = `
+    <div class="msg-text">${escHtml(text)}</div>
+    <div class="msg-time">${time}</div>
+  `;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping(roomId, slotIndex, show) {
+  const chat = document.getElementById(`chat_${roomId}_${slotIndex}`);
+  if (!chat) return;
+
+  let typing = chat.querySelector('.typing');
+  if (!typing) {
+    typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
+    chat.appendChild(typing);
+  }
+
+  if (show) {
+    typing.classList.add('visible');
+    chat.scrollTop = chat.scrollHeight;
+  } else {
+    typing.classList.remove('visible');
+    typing.remove();
+  }
+}
+
+// ── ROSTER / SLOT ASSIGNMENT ──
+function openRoster(roomId, slotIndex) {
+  pendingSlot = { roomId, slotIndex };
+  const room = rooms.find(r => r.id === roomId);
+  const usedAgents = room ? room.slots.filter(Boolean) : [];
+
+  document.getElementById('roster-title').textContent = `ASSIGN AGENT — ${room?.name || ''} SLOT ${slotIndex + 1}`;
+
+  const grid = document.getElementById('roster-grid');
+  grid.innerHTML = '';
+  AGENTS.forEach(agent => {
+    const inUse = usedAgents.includes(agent.id) && room.slots[slotIndex] !== agent.id;
+    const isSelected = room && room.slots[slotIndex] === agent.id;
+    const card = document.createElement('div');
+    card.className = 'roster-agent' + (isSelected ? ' selected' : '') + (inUse ? ' disabled' : '');
+    card.style.opacity = inUse ? '0.4' : '1';
+    card.innerHTML = `
+      <div class="roster-agent-badge" style="background:${agent.color}22;color:${agent.color};">${agent.badge}</div>
+      <div>
+        <div class="roster-agent-name">${agent.name}</div>
+        <div class="roster-agent-role">${agent.role}</div>
+      </div>
+    `;
+    if (!inUse) card.onclick = () => assignAgent(agent.id);
+    grid.appendChild(card);
+  });
+
+  document.getElementById('roster-modal').classList.add('open');
+}
+
+function assignAgent(agentId) {
+  if (!pendingSlot) return;
+  const { roomId, slotIndex } = pendingSlot;
+  const room = rooms.find(r => r.id === roomId);
+  if (room) {
+    room.slots[slotIndex] = agentId;
+    room.messages[slotIndex] = { history: [] };
+  }
+  saveRooms();
+  closeRoster();
+  renderMainArea();
+  renderSidebar();
+  // Auto-load soul from bridge
+  autoLoadSoul(agentId);
+}
+
+function clearSlot() {
+  if (!pendingSlot) return;
+  const { roomId, slotIndex } = pendingSlot;
+  const room = rooms.find(r => r.id === roomId);
+  if (room) {
+    room.slots[slotIndex] = null;
+    room.messages[slotIndex] = { history: [] };
+  }
+  saveRooms();
+  closeRoster();
+  renderMainArea();
+}
+
+function closeRoster() {
+  document.getElementById('roster-modal').classList.remove('open');
+  pendingSlot = null;
+}
+
+// ── CONTEXT MENU ──
+function openCtxMenu(e, roomId, slotIndex) {
+  e.stopPropagation();
+  ctxPendingSlot = { roomId, slotIndex };
+  const menu = document.getElementById('ctx-menu');
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  menu.classList.add('open');
+}
+
+function openRosterFromCtx() {
+  if (!ctxPendingSlot) return;
+  document.getElementById('ctx-menu').classList.remove('open');
+  pendingSlot = ctxPendingSlot;
+  const { roomId, slotIndex } = ctxPendingSlot;
+  openRoster(roomId, slotIndex);
+  ctxPendingSlot = null;
+}
+
+function clearSlotFromCtx() {
+  if (!ctxPendingSlot) return;
+  const { roomId, slotIndex } = ctxPendingSlot;
+  const room = rooms.find(r => r.id === roomId);
+  if (room) { room.slots[slotIndex] = null; room.messages[slotIndex] = { history: [] }; }
+  document.getElementById('ctx-menu').classList.remove('open');
+  ctxPendingSlot = null;
+  renderMainArea();
+}
+
+document.addEventListener('click', () => document.getElementById('ctx-menu').classList.remove('open'));
+
+// ── VIEW SWITCHING ──
+function setView(view) {
+  currentView = view;
+  document.getElementById('btn-grid').classList.toggle('active', view === 'grid');
+  document.getElementById('footer-mode').textContent = view.toUpperCase();
+  renderMainArea();
+}
+
+function renderSingleView(main) {
+  const room = rooms.find(r => r.id === activeRoomId);
+  if (!room) return;
+
+  // Single view: show all agents stacked with a selector
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'height:100%;display:flex;flex-direction:column;gap:10px;padding:12px;';
+
+  // Agent selector row
+  const selector = document.createElement('div');
+  selector.style.cssText = 'display:flex;gap:6px;flex-shrink:0;';
+  room.slots.forEach((agentId, i) => {
+    const agent = agentId ? AGENTS.find(a => a.id === agentId) : null;
+    const btn = document.createElement('button');
+    btn.className = 'view-btn' + (singleViewAgent === i ? ' active' : '');
+    btn.textContent = agent ? agent.name : `SLOT ${i+1}`;
+    btn.style.color = agent ? agent.color : '';
+    btn.onclick = () => { singleViewAgent = i; renderMainArea(); };
+    selector.appendChild(btn);
+  });
+  wrapper.appendChild(selector);
+
+  // Single panel
+  const idx = singleViewAgent !== null ? singleViewAgent : 0;
+  const agentId = room.slots[idx];
+  const agent = agentId ? AGENTS.find(a => a.id === agentId) : null;
+
+  const panelWrap = document.createElement('div');
+  panelWrap.style.cssText = 'flex:1;overflow:hidden;';
+
+  if (agent) {
+    const panel = buildAgentPanel(room, idx, agent);
+    panel.style.height = '100%';
+    panelWrap.appendChild(panel);
+  } else {
+    const empty = buildEmptySlot(room, idx);
+    empty.style.height = '100%';
+    panelWrap.appendChild(empty);
+  }
+
+  wrapper.appendChild(panelWrap);
+  main.appendChild(wrapper);
+}
+
+// ── SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function renderSidebar() {
+  const container = document.getElementById('sidebar-agents');
+  container.innerHTML = '';
+  AGENTS.forEach(agent => {
+    const row = document.createElement('div');
+    row.className = 'agent-row';
+    row.style.cssText = 'position:relative;';
+    row.innerHTML = `
+      <div class="agent-row-badge" style="background:${agent.color}22;color:${agent.color};">${agent.badge}</div>
+      <div class="agent-row-info">
+        <div class="agent-row-name">${agent.name}</div>
+        <div class="agent-row-role">${agent.role}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="status-dot ${agent.soulLoaded ? 'online' : 'offline'}"></div>
+        <button class="agent-delete-btn" onclick="deleteAgent('${agent.id}')" title="Remove agent"
+          style="background:none;border:none;color:rgba(239,68,68,0.4);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;display:none;"
+          onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='rgba(239,68,68,0.4)'">×</button>
+      </div>
+    `;
+    row.onmouseenter = () => row.querySelector('.agent-delete-btn').style.display = 'block';
+    row.onmouseleave = () => row.querySelector('.agent-delete-btn').style.display = 'none';
+    container.appendChild(row);
+  });
+}
+
+function deleteAgent(agentId) {
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+  if (!confirm(`REMOVE ${agent.name} FROM ROSTER?\n\nThis removes the agent from all rooms.`)) return;
+  // Clear from all room slots
+  rooms.forEach(room => {
+    room.slots = room.slots.map(s => s === agentId ? null : s);
+    room.messages = room.messages.map((m, i) => room.slots[i] === null ? {} : m);
+  });
+  // Remove from AGENTS array
+  const idx = AGENTS.findIndex(a => a.id === agentId);
+  if (idx !== -1) AGENTS.splice(idx, 1);
+  renderSidebar();
+  renderMainArea();
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const el = document.getElementById('clock');
+  if (el) {
+    const n = new Date();
+    el.textContent = n.toLocaleTimeString('en-US', { hour12: false });
+  }
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── UTILS ──
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+// ── API KEYS MODAL ──
+function openKeysModal() {
+  document.getElementById('key-openrouter').value = CONFIG.openrouterKey || '';
+  document.getElementById('key-gemini').value = CONFIG.geminiKey || '';
+  updateKeysStatus();
+  document.getElementById('keys-modal').classList.add('open');
+}
+
+function closeKeysModal() {
+  document.getElementById('keys-modal').classList.remove('open');
+}
+
+function saveKeys() {
+  CONFIG.openrouterKey = document.getElementById('key-openrouter').value.trim();
+  CONFIG.geminiKey = document.getElementById('key-gemini').value.trim();
+  localStorage.setItem('mc3_keys', JSON.stringify({ or: CONFIG.openrouterKey, gm: CONFIG.geminiKey }));
+  updateKeysStatus();
+  updateKeysBtn();
+  closeKeysModal();
+}
+
+function loadKeys() {
+  try {
+    const saved = localStorage.getItem('mc3_keys');
+    if (!saved) return;
+    const k = JSON.parse(saved);
+    if (k.or) CONFIG.openrouterKey = k.or;
+    if (k.gm) CONFIG.geminiKey = k.gm;
+  } catch(e) {}
+}
+
+function updateKeysStatus() {
+  const box = document.getElementById('keys-status');
+  if (!box) return;
+  const ok = CONFIG.openrouterKey;
+  const gk = CONFIG.geminiKey;
+  box.innerHTML = `
+    <div class="key-status-chip ${ok ? 'set' : 'unset'}"><span>${ok ? '●' : '○'}</span> OPENROUTER ${ok ? 'SET' : 'NOT SET'}</div>
+    <div class="key-status-chip ${gk ? 'set' : 'unset'}"><span>${gk ? '●' : '○'}</span> GEMINI ${gk ? 'SET' : 'NOT SET'}</div>
+  `;
+}
+
+function updateKeysBtn() {
+  const btn = document.getElementById('keys-btn');
+  if (!btn) return;
+  const ok = !!CONFIG.openrouterKey;
+  const gk = !!CONFIG.geminiKey;
+  const ck = true; // no longer used
+  if (ok && gk) {
+    btn.className = 'keys-btn armed';
+    btn.textContent = '⚙ KEYS ARMED';
+  } else if (ok || gk) {
+    btn.className = 'keys-btn partial';
+    btn.textContent = '⚙ KEYS PARTIAL';
+  } else {
+    btn.className = 'keys-btn';
+    btn.textContent = '⚙ KEYS';
+  }
+}
+
+// ── SOUL MODAL ──
+function openSoulModal(roomId, slotIndex) {
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  const agentId = room.slots[slotIndex];
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (!agent) return;
+
+  pendingSoulSlot = { roomId, slotIndex, agentId };
+  pendingSoulContent = null;
+
+  document.getElementById('soul-agent-label').textContent = `${agent.name} — ${agent.role}`;
+  document.getElementById('soul-upload-status').textContent = 'NO FILE LOADED';
+  document.getElementById('soul-upload-status').className = 'soul-status info';
+  document.getElementById('soul-paste-status').textContent = 'PASTE SOUL FILE CONTENTS ABOVE';
+  document.getElementById('soul-paste-status').className = 'soul-status info';
+  document.getElementById('soul-chain-status').textContent = 'CHAIN VERIFICATION: PENDING';
+  document.getElementById('soul-chain-status').className = 'soul-status info';
+  document.getElementById('soul-file-loaded').classList.remove('visible');
+  document.getElementById('soul-paste-input').value = '';
+  document.getElementById('soul-file-input').value = '';
+
+  // If soul already loaded, show it
+  if (agentSouls[agentId]) {
+    document.getElementById('soul-paste-input').value = agentSouls[agentId].raw;
+    document.getElementById('soul-chain-status').textContent = '● SOUL MOUNTED — OVERRIDE TO RELOAD';
+    document.getElementById('soul-chain-status').className = 'soul-status ok';
+  }
+
+  switchSoulTab('upload');
+  document.getElementById('soul-modal').classList.add('open');
+}
+
+function closeSoulModal() {
+  document.getElementById('soul-modal').classList.remove('open');
+  pendingSoulSlot = null;
+  pendingSoulContent = null;
+}
+
+function switchSoulTab(tab) {
+  document.querySelectorAll('.soul-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'upload') || (i === 1 && tab === 'paste'));
+  });
+  document.getElementById('soul-pane-upload').classList.toggle('active', tab === 'upload');
+  document.getElementById('soul-pane-paste').classList.toggle('active', tab === 'paste');
+}
+
+function handleSoulFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    pendingSoulContent = content;
+
+    document.getElementById('soul-file-name').textContent = file.name;
+    document.getElementById('soul-file-loaded').classList.add('visible');
+
+    // Try parse
+    const result = tryParseSoul(content);
+    if (result.valid) {
+      document.getElementById('soul-upload-status').textContent = `✓ VALID — ${result.summary}`;
+      document.getElementById('soul-upload-status').className = 'soul-status ok';
+      document.getElementById('soul-chain-status').textContent = 'CHAIN VERIFICATION: PASSED';
+      document.getElementById('soul-chain-status').className = 'soul-status ok';
+    } else {
+      const isCSL = content.includes('[SPEC:') || content.includes('[R:') || content.includes('[D:');
+      if (isCSL) {
+        const idMatch = content.match(/\[R:id=([^|^\]]+)/);
+        const roleMatch = content.match(/role=([^|^\]]+)/);
+        const agentId = idMatch ? idMatch[1].toUpperCase() : '?';
+        const agentRole = roleMatch ? roleMatch[1] : '?';
+        document.getElementById('soul-upload-status').textContent = `✓ CSL SOUL — ${agentId} / ${agentRole}`;
+        document.getElementById('soul-upload-status').className = 'soul-status ok';
+        document.getElementById('soul-chain-status').textContent = 'CHAIN VERIFICATION: CSL MODE';
+        document.getElementById('soul-chain-status').className = 'soul-status ok';
+      } else {
+        document.getElementById('soul-upload-status').textContent = `⚠ RAW TEXT — WILL LOAD AS CONTEXT`;
+        document.getElementById('soul-upload-status').className = 'soul-status info';
+        document.getElementById('soul-chain-status').textContent = 'CHAIN VERIFICATION: RAW MODE';
+        document.getElementById('soul-chain-status').className = 'soul-status info';
+      }
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearSoulFile() {
+  pendingSoulContent = null;
+  document.getElementById('soul-file-loaded').classList.remove('visible');
+  document.getElementById('soul-file-input').value = '';
+  document.getElementById('soul-upload-status').textContent = 'NO FILE LOADED';
+  document.getElementById('soul-upload-status').className = 'soul-status info';
+  document.getElementById('soul-chain-status').textContent = 'CHAIN VERIFICATION: PENDING';
+  document.getElementById('soul-chain-status').className = 'soul-status info';
+}
+
+function tryParseSoul(content) {
+  try {
+    const parsed = JSON.parse(content);
+    const name = parsed.name || parsed.agent || '?';
+    const role = parsed.role || '?';
+    const hasDirectives = parsed.directives || parsed.system || parsed.context;
+    return {
+      valid: true,
+      parsed,
+      summary: `${name} / ${role}${hasDirectives ? ' / DIRECTIVES OK' : ''}`
+    };
+  } catch {
+    return { valid: false, parsed: null, summary: 'raw text' };
+  }
+}
+
+function commitSoul() {
+  if (!pendingSoulSlot) return;
+  const { roomId, slotIndex, agentId } = pendingSoulSlot;
+
+  // Determine content source
+  const activeTab = document.getElementById('soul-pane-upload').classList.contains('active') ? 'upload' : 'paste';
+  let raw = '';
+
+  if (activeTab === 'upload') {
+    if (!pendingSoulContent) {
+      document.getElementById('soul-chain-status').textContent = '✗ NO FILE LOADED';
+      document.getElementById('soul-chain-status').className = 'soul-status err';
+      return;
+    }
+    raw = pendingSoulContent;
+  } else {
+    raw = document.getElementById('soul-paste-input').value.trim();
+    if (!raw) {
+      document.getElementById('soul-paste-status').textContent = '✗ NOTHING TO MOUNT';
+      document.getElementById('soul-paste-status').className = 'soul-status err';
+      return;
+    }
+  }
+
+  const result = tryParseSoul(raw);
+  agentSouls[agentId] = { raw, parsed: result.parsed };
+
+  // Update agent soulLoaded flag
+  const agent = AGENTS.find(a => a.id === agentId);
+  if (agent) agent.soulLoaded = true;
+
+  // Clear conversation history — fresh start with new soul
+  const room = rooms.find(r => r.id === roomId);
+  if (room) room.messages[slotIndex] = { history: [] };
+
+  closeSoulModal();
+  renderMainArea();
+  renderSidebar();
+
+  // Show confirmation in chat
+  setTimeout(() => {
+    appendMessage(roomId, slotIndex, 'agent',
+      `Soul mounted. ${result.valid ? `Identity: ${result.summary}.` : 'Raw context loaded.'} Context active — ready.`
+    );
+  }, 100);
+}
+
+// Drag-over styling
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('soul-drop-zone');
+  if (zone) {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const input = document.getElementById('soul-file-input');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        handleSoulFile({ target: input });
+      }
+    });
+  }
+});
+
+// ── MODE STATE ──
+let currentMode = 'grid'; // grid | single | arena | boardroom
+let arenaParticipants = [];
+let arenaRounds = 1;
+let arenaRunning = false;
+let memoType = 'eod';
+let memoSelectedRecipients = [];
+
+// ── EXIT MODE ──
+function exitMode() {
+  currentMode = 'grid';
+  arenaRunning = false;
+  arenaParticipants = [];
+  document.getElementById('mode-bar').className = '';
+  document.getElementById('mode-bar').classList.remove('visible');
+  document.getElementById('broadcast-bar').classList.remove('visible');
+  // Remove arena highlights
+  document.querySelectorAll('.agent-panel').forEach(p => {
+    p.classList.remove('arena-participant','arena-active');
+  });
+  document.getElementById('footer-mode').textContent = 'GRID';
+  setView('grid');
+}
+
+// ── BOARDROOM ──
+function enterBoardroom() {
+  const room = rooms.find(r => r.id === activeRoomId);
+  if (!room) return;
+  const filled = room.slots.filter(Boolean).length;
+  if (filled < 2) { alert('Need at least 2 agents in the room for Boardroom mode.'); return; }
+
+  currentMode = 'boardroom';
+  setView('grid');
+
+  const bar = document.getElementById('mode-bar');
+  bar.className = 'boardroom-mode visible';
+  document.getElementById('mode-bar-label').textContent = '▦ BOARDROOM MODE — MESSAGE BROADCASTS TO ALL AGENTS';
+  document.getElementById('mode-bar-sub').textContent = `${filled} AGENTS RECEIVING`;
+
+  document.getElementById('broadcast-bar').classList.add('visible');
+  document.getElementById('footer-mode').textContent = 'BOARDROOM';
+  setTimeout(() => document.getElementById('broadcast-input').focus(), 100);
+}
+
+function sendBroadcast() {
+  const input = document.getElementById('broadcast-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const room = rooms.find(r => r.id === activeRoomId);
+  if (!room) return;
+
+  room.slots.forEach((agentId, i) => {
+    if (!agentId) return;
+    const agent = AGENTS.find(a => a.id === agentId);
+    if (!agent) return;
+
+    if (!room.messages[i]) room.messages[i] = { history: [] };
+
+    appendMessage(activeRoomId, i, 'user', text);
+    showTyping(activeRoomId, i, true);
+    room.messages[i].history.push({ role: 'user', content: text });
+
+    // Stagger responses slightly so they feel simultaneous but don't race
+    const delay = i * 200;
+    setTimeout(() => callAgent(activeRoomId, i, agent, room.messages[i].history), delay);
+  });
+}
+
+// ── ARENA ──
+function openArenaSetup() {
+  const room = rooms.find(r => r.id === activeRoomId);
+  if (!room) return;
+
+  const grid = document.getElementById('arena-agent-grid');
+  grid.innerHTML = '';
+  arenaParticipants = [];
+  arenaRounds = 1;
+  document.getElementById('rounds-1').classList.add('selected');
+  document.getElementById('rounds-2').classList.remove('selected');
+  document.getElementById('rounds-3').classList.remove('selected');
+
+  room.slots.forEach((agentId, i) => {
+    if (!agentId) return;
+    const agent = AGENTS.find(a => a.id === agentId);
+    if (!agent) return;
+
+    const card = document.createElement('div');
+    card.className = 'arena-agent-card';
+    card.id = `arena-card-${agentId}`;
+    card.innerHTML = `
+      <div class="agent-badge" style="background:${agent.color}22;color:${agent.color};width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;">${agent.badge}</div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:${agent.color};">${agent.name}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text-dim);">${agent.role}</div>
+      </div>
+    `;
+    card.onclick = () => toggleArenaParticipant(agentId, i);
+    grid.appendChild(card);
+  });
+
+  document.getElementById('arena-topic').value = '';
+  document.getElementById('arena-modal').classList.add('open');
+}
+
+function toggleArenaParticipant(agentId, slotIndex) {
+  const idx = arenaParticipants.findIndex(p => p.agentId === agentId);
+  const card = document.getElementById(`arena-card-${agentId}`);
+  if (idx >= 0) {
+    arenaParticipants.splice(idx, 1);
+    card.classList.remove('selected');
+  } else {
+    arenaParticipants.push({ agentId, slotIndex });
+    card.classList.add('selected');
+  }
+}
+
+function selectRounds(n) {
+  arenaRounds = n;
+  [1,2,3].forEach(i => document.getElementById(`rounds-${i}`).classList.toggle('selected', i === n));
+}
+
+function closeArenaSetup() {
+  document.getElementById('arena-modal').classList.remove('open');
+}
+
+async function startArena() {
+  if (arenaParticipants.length < 2) { alert('Select at least 2 participants.'); return; }
+  const topic = document.getElementById('arena-topic').value.trim();
+  if (!topic) { alert('Enter a debate topic.'); return; }
+
+  closeArenaSetup();
+  currentMode = 'arena';
+  arenaRunning = true;
+  setView('grid');
+
+  const bar = document.getElementById('mode-bar');
+  bar.className = 'arena-mode visible';
+  document.getElementById('mode-bar-label').textContent = `⚔ ARENA — ${arenaParticipants.length} AGENTS — ${arenaRounds} ROUND${arenaRounds > 1 ? 'S' : ''}`;
+  document.getElementById('mode-bar-sub').textContent = topic.length > 60 ? topic.substring(0,60)+'…' : topic;
+  document.getElementById('footer-mode').textContent = 'ARENA';
+
+  // Highlight participants
+  const room = rooms.find(r => r.id === activeRoomId);
+  arenaParticipants.forEach(({ slotIndex }) => {
+    const panel = document.getElementById(`panel_${activeRoomId}_${slotIndex}`);
+    if (panel) panel.classList.add('arena-participant');
+  });
+
+  // Kick off arena — each participant gets the topic and responds in sequence, each round
+  for (let round = 0; round < arenaRounds && arenaRunning; round++) {
+    for (let pi = 0; pi < arenaParticipants.length && arenaRunning; pi++) {
+      const { agentId, slotIndex } = arenaParticipants[pi];
+      const agent = AGENTS.find(a => a.id === agentId);
+      if (!agent || !room) continue;
+
+      if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [] };
+
+      // Highlight active
+      document.querySelectorAll('.agent-panel').forEach(p => p.classList.remove('arena-active'));
+      const panel = document.getElementById(`panel_${activeRoomId}_${slotIndex}`);
+      if (panel) panel.classList.add('arena-active');
+
+      // Build arena context
+      let prompt = round === 0 && pi === 0
+        ? `ARENA MODE. Debate topic: "${topic}". You go first. State your position clearly and argue it.`
+        : `ARENA MODE. Topic: "${topic}". Round ${round + 1}. Respond to the previous arguments and advance your position.`;
+
+      room.messages[slotIndex].history.push({ role: 'user', content: prompt });
+      appendMessage(activeRoomId, slotIndex, 'user', `[ARENA R${round+1}] ${prompt}`);
+      showTyping(activeRoomId, slotIndex, true);
+
+      // Inject arena system addendum
+      const arenaAgent = { ...agent, _arenaMode: true, _topic: topic };
+      await callAgentArena(activeRoomId, slotIndex, agent, room.messages[slotIndex].history, topic);
+
+      // Small pause between turns
+      await new Promise(res => setTimeout(res, 600));
+    }
+  }
+
+  // Arena complete
+  if (arenaRunning) {
+    document.getElementById('mode-bar-label').textContent = `⚔ ARENA COMPLETE — ${arenaParticipants.length} AGENTS — ${arenaRounds} ROUND${arenaRounds > 1 ? 'S' : ''}`;
+    arenaRunning = false;
+    document.querySelectorAll('.agent-panel').forEach(p => p.classList.remove('arena-active'));
+  }
+}
+
+async function callAgentArena(roomId, slotIndex, agent, history, topic) {
+  const baseSystem = getAgentSystem(agent);
+  const arenaSystem = baseSystem + `\n\nYou are in ARENA MODE. Topic: "${topic}". Be direct, argue your position forcefully. Engage with opposing arguments. No hedging. Max 3 paragraphs per turn.`;
+  const route = agent.apiRoute || 'openrouter';
+
+  try {
+    let resp, data;
+
+    if (route === 'gemini') {
+      const geminiHistory = history.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+      resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${agent.model}:generateContent?key=${CONFIG.geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: arenaSystem }] },
+          contents: geminiHistory,
+          generationConfig: { maxOutputTokens: 600 }
+        })
+      });
+      data = await resp.json();
+      showTyping(roomId, slotIndex, false);
+      if (data.candidates && data.candidates[0]) {
+        const reply = data.candidates[0].content.parts[0].text;
+        appendMessage(roomId, slotIndex, 'agent', reply);
+        const room = rooms.find(r => r.id === roomId);
+        if (room && room.messages[slotIndex]) room.messages[slotIndex].history.push({ role: 'assistant', content: reply });
+      } else if (data.error) {
+        appendMessage(roomId, slotIndex, 'error', data.error.message || 'Gemini API error');
+      }
+    } else {
+      resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${CONFIG.openrouterKey}`,
+          'HTTP-Referer': 'https://soulbolt.ai',
+          'X-Title': 'SOULBOLT Mission Control',
+        },
+        body: JSON.stringify({
+          model: agent.model,
+          max_tokens: 600,
+          messages: [
+            { role: 'system', content: arenaSystem },
+            ...history.map(m => ({ role: m.role, content: m.content }))
+          ]
+        })
+      });
+      data = await resp.json();
+      showTyping(roomId, slotIndex, false);
+      if (data.choices && data.choices[0]) {
+        const reply = data.choices[0].message.content;
+        appendMessage(roomId, slotIndex, 'agent', reply);
+        const room = rooms.find(r => r.id === roomId);
+        if (room && room.messages[slotIndex]) room.messages[slotIndex].history.push({ role: 'assistant', content: reply });
+      } else if (data.error) {
+        appendMessage(roomId, slotIndex, 'error', data.error.message || 'OpenRouter error');
+      }
+    }
+  } catch (err) {
+    showTyping(roomId, slotIndex, false);
+    appendMessage(roomId, slotIndex, 'error', err.message);
+  }
+}
+
+// ── MEMO ──
+const MEMO_TEMPLATES = {
+  eod: {
+    subject: 'EOD REPORT — ' + new Date().toLocaleDateString('en-US'),
+    body: 'EOD check. State your current status, what you completed today, any blockers, and top priority for next session. COPYBLOCK format.'
+  },
+  directive: {
+    subject: 'DIRECTIVE — ',
+    body: ''
+  },
+  custom: {
+    subject: '',
+    body: ''
+  }
+};
+
+function openMemoModal() {
+  const room = rooms.find(r => r.id === activeRoomId);
+  memoSelectedRecipients = [];
+  memoType = 'eod';
+
+  // Set template
+  document.getElementById('memo-subject').value = MEMO_TEMPLATES.eod.subject;
+  document.getElementById('memo-body').value = MEMO_TEMPLATES.eod.body;
+  document.querySelectorAll('.memo-type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mtype-eod').classList.add('active');
+
+  // Build recipient chips from room agents
+  const recipBox = document.getElementById('memo-recipients');
+  recipBox.innerHTML = '';
+  if (room) {
+    room.slots.forEach((agentId, i) => {
+      if (!agentId) return;
+      const agent = AGENTS.find(a => a.id === agentId);
+      if (!agent) return;
+
+      memoSelectedRecipients.push({ agentId, slotIndex: i });
+      const chip = document.createElement('div');
+      chip.className = 'memo-recip-chip selected';
+      chip.id = `memo-chip-${agentId}`;
+      chip.style.borderColor = agent.color + '66';
+      chip.style.color = agent.color;
+      chip.innerHTML = `<span>${agent.badge}</span><span>${agent.name}</span>`;
+      chip.onclick = () => toggleMemoRecipient(agentId, i, agent);
+      recipBox.appendChild(chip);
+    });
+  }
+
+  updateMemoPreview();
+  document.getElementById('memo-modal').classList.add('open');
+}
+
+function toggleMemoRecipient(agentId, slotIndex, agent) {
+  const idx = memoSelectedRecipients.findIndex(r => r.agentId === agentId);
+  const chip = document.getElementById(`memo-chip-${agentId}`);
+  if (idx >= 0) {
+    memoSelectedRecipients.splice(idx, 1);
+    chip.classList.remove('selected');
+    chip.style.color = 'var(--text-dim)';
+  } else {
+    memoSelectedRecipients.push({ agentId, slotIndex });
+    chip.classList.add('selected');
+    chip.style.color = agent.color;
+  }
+  updateMemoPreview();
+}
+
+function selectMemoType(type) {
+  memoType = type;
+  document.querySelectorAll('.memo-type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`mtype-${type}`).classList.add('active');
+  const t = MEMO_TEMPLATES[type];
+  document.getElementById('memo-subject').value = t.subject;
+  document.getElementById('memo-body').value = t.body;
+  updateMemoPreview();
+}
+
+function updateMemoPreview() {
+  const count = memoSelectedRecipients.length;
+  document.getElementById('memo-preview').textContent =
+    `COPYBLOCK format — transmitting to ${count} agent${count !== 1 ? 's' : ''}`;
+}
+
+function closeMemoModal() {
+  document.getElementById('memo-modal').classList.remove('open');
+}
+
+function sendMemo() {
+  if (memoSelectedRecipients.length === 0) { alert('Select at least one recipient.'); return; }
+
+  const subject = document.getElementById('memo-subject').value.trim() || 'MEMO';
+  const body = document.getElementById('memo-body').value.trim();
+  if (!body) { alert('Memo body is empty.'); return; }
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'2-digit' }).replace(/\//g,'.');
+  const recipNames = memoSelectedRecipients.map(r => AGENTS.find(a => a.id === r.agentId)?.name || r.agentId).join(', ');
+
+  const memoText = `COPYBLOCK: INTERNAL MEMO\n\nTO: ${recipNames}\nFROM: PHILLY BLUNT (CIO)\nDATE: ${dateStr}\nSUBJECT: ${subject}\n\n───────────────────────────────────────────\n\n${body}\n\n───────────────────────────────────────────\n\nPhilly Blunt\nCIO / Sovereign\nmAIn St. Solutions`;
+
+  closeMemoModal();
+
+  // Activate boardroom-style mode bar
+  const bar = document.getElementById('mode-bar');
+  bar.className = 'memo-mode visible';
+  document.getElementById('mode-bar-label').textContent = `✉ MEMO TRANSMITTED — ${memoSelectedRecipients.length} RECIPIENTS`;
+  document.getElementById('mode-bar-sub').textContent = subject;
+  document.getElementById('footer-mode').textContent = 'MEMO';
+
+  const room = rooms.find(r => r.id === activeRoomId);
+  memoSelectedRecipients.forEach(({ agentId, slotIndex }, idx) => {
+    const agent = AGENTS.find(a => a.id === agentId);
+    if (!agent || !room) return;
+
+    if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [] };
+    room.messages[slotIndex].history.push({ role: 'user', content: memoText });
+    appendMessage(activeRoomId, slotIndex, 'user', memoText);
+    showTyping(activeRoomId, slotIndex, true);
+
+    setTimeout(() => callAgent(activeRoomId, slotIndex, agent, room.messages[slotIndex].history), idx * 300);
+  });
+}
+
+// ── INIT ──
+loadCustomAgents();
+loadKeys();
+renderSidebar();
+updateKeysStatus();
+updateKeysBtn();
+
+const hadSavedRooms = loadRooms();
+if (!hadSavedRooms) {
+  createRoom('WAR COUNCIL');
+  const wc = rooms[0];
+  wc.slots[0] = 'council';
+  wc.slots[1] = 'virgil';
+  wc.slots[2] = 'dom';
+  wc.slots[3] = 'charli';
+  saveRooms();
+} else {
+  if (rooms.length > 0) {
+    activeRoomId = rooms[0].id;
+    renderRoomTabs();
+    document.getElementById('footer-room').textContent = rooms[0].name;
+  }
+}
+
+renderMainArea();
+renderRoomTabs();
+
+// Enter to submit new room on input
+document.getElementById('new-room-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') createRoom();
+  if (e.key === 'Escape') closeNewRoom();
+});
+</script>
+</body>
+</html>
