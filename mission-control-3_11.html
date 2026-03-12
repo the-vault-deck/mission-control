@@ -470,6 +470,47 @@
   }
   .msg.system-inject .msg-text { color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; }
 
+  .copyblock-wrap {
+    margin-top: 6px;
+    border: 1px solid rgba(0,255,255,0.2);
+    background: rgba(0,255,255,0.04);
+  }
+  .copyblock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-bottom: 1px solid rgba(0,255,255,0.15);
+  }
+  .copyblock-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+  }
+  .copyblock-copy-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--cyan);
+    background: none;
+    border: 1px solid rgba(0,255,255,0.3);
+    padding: 2px 8px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+  }
+  .copyblock-copy-btn:hover { background: rgba(0,255,255,0.12); }
+  .copyblock-copy-btn.copied { color: var(--green); border-color: rgba(0,255,136,0.3); }
+  .copyblock-body {
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    line-height: 1.6;
+    color: var(--white-dim);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   .msg-time {
     font-family: 'JetBrains Mono', monospace;
     font-size: 8px;
@@ -2261,6 +2302,13 @@ function renderMainArea() {
   }
 
   main.appendChild(grid);
+
+  // Replay message history into each panel after DOM is built
+  for (let i = 0; i < slotCount; i++) {
+    const agentId = room.slots[i];
+    if (!agentId) continue;
+    replayHistory(room, i);
+  }
 }
 
 function toggleExpandSlot(roomId, slotIndex, btn) {
@@ -2359,18 +2407,21 @@ function buildAgentPanel(room, slotIndex, agent) {
         title="Load this agent's most recent EOD + latest ALL_STAFF memo">
         ↑ READ MEMOS
       </button>
-      <button onclick="fetchFile('${room.id}', ${slotIndex})"
-        style="flex:1;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.15);color:var(--text-dim);
-        font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;"
-        title="Fetch a specific file by exact filename">
-        ↑ FETCH FILE
-      </button>
+
       <button onclick="proposeSoulDelta('${room.id}', ${slotIndex})"
         style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);color:#a855f7;
         font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;"
         title="File a soul update proposal for FORGE review">
         ✦ SOUL Δ
       </button>
+      <label style="display:flex;align-items:center;justify-content:center;
+        background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);
+        font-family:'JetBrains Mono',monospace;font-size:9px;padding:5px 8px;cursor:pointer;letter-spacing:0.06em;white-space:nowrap;"
+        title="Open a local file and inject its contents into this agent context">
+        ↑ ADD FILE
+        <input type="file" accept=".csl,.json,.md,.txt,.html,.py,.js,.csv,image/*" style="display:none;"
+          onchange="injectLocalFile(event, '${room.id}', ${slotIndex})" />
+      </label>
     </div>
   `;
 
@@ -2476,6 +2527,73 @@ async function fetchFile(roomId, slotIndex) {
   showBridgeToast(`LOADED — ${res.file}`);
 }
 
+async function injectLocalFile(event, roomId, slotIndex) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+
+  const isImage = file.type.startsWith('image/');
+  const room = rooms.find(r => r.id === roomId);
+  if (!room) return;
+  if (!room.messages[slotIndex]) room.messages[slotIndex] = { history: [] };
+
+  if (isImage) {
+    // Read as base64 for vision models
+    const reader = new FileReader();
+    reader.onload = e => {
+      const dataUrl = e.target.result; // e.g. "data:image/png;base64,iVBOR..."
+      const base64 = dataUrl.split(',')[1];
+      const mimeType = file.type;
+
+      // Store as vision message — content array format
+      room.messages[slotIndex].history.push({
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: { url: `data:${mimeType};base64,${base64}` }
+          },
+          {
+            type: 'text',
+            text: `[Image uploaded: ${file.name}]`
+          }
+        ]
+      });
+
+      // Show inline preview in chat
+      const chat = document.getElementById(`chat_${roomId}_${slotIndex}`);
+      if (chat) {
+        const msg = document.createElement('div');
+        msg.className = 'msg user';
+        msg.innerHTML = `
+          <img src="${dataUrl}" style="max-width:100%;max-height:200px;display:block;margin-bottom:4px;" />
+          <div class="msg-text" style="font-size:9px;color:var(--text-dim);">${file.name} — ready for vision query</div>
+        `;
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight;
+      }
+      showBridgeToast(`IMAGE LOADED — ${file.name}`);
+    };
+    reader.onerror = () => showBridgeToast(`READ ERROR — ${file.name}`);
+    reader.readAsDataURL(file);
+
+  } else {
+    // Text file — existing behavior
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      const injectMsg = `[FILE LOADED — ${file.name}]
+
+${text}`;
+      room.messages[slotIndex].history.push({ role: 'user', content: injectMsg });
+      appendMessage(roomId, slotIndex, 'system-inject', `📂 FILE LOADED — ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+      showBridgeToast(`LOADED — ${file.name}`);
+    };
+    reader.onerror = () => showBridgeToast(`READ ERROR — ${file.name}`);
+    reader.readAsText(file, 'utf-8');
+  }
+}
+
 async function proposeSoulDelta(roomId, slotIndex) {
   const room = rooms.find(r => r.id === roomId);
   if (!room) return;
@@ -2555,17 +2673,30 @@ async function callAgent(roomId, slotIndex, agent, history) {
 
     if (route === 'gemini') {
       // Direct Gemini API — Gia
-      const geminiHistory = history.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
+      const geminiHistory = history.map(m => {
+        const role = m.role === 'assistant' ? 'model' : 'user';
+        if (Array.isArray(m.content)) {
+          // Vision message — convert image_url to Gemini inline_data format
+          const parts = m.content.map(c => {
+            if (c.type === 'image_url') {
+              const dataUrl = c.image_url.url; // data:image/png;base64,xxx
+              const [meta, data] = dataUrl.split(',');
+              const mimeType = meta.replace('data:', '').replace(';base64', '');
+              return { inline_data: { mime_type: mimeType, data } };
+            }
+            return { text: c.text || '' };
+          });
+          return { role, parts };
+        }
+        return { role, parts: [{ text: m.content }] };
+      });
       resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${agent.model}:generateContent?key=${CONFIG.geminiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: geminiHistory,
-          generationConfig: { maxOutputTokens: 1000 }
+          generationConfig: { maxOutputTokens: 4000 }
         })
       });
       const data = await resp.json();
@@ -2586,6 +2717,12 @@ async function callAgent(roomId, slotIndex, agent, history) {
       }
 
     } else {
+      // Build messages — handle vision (content array) vs text
+      const builtMessages = history.map(m => {
+        if (Array.isArray(m.content)) return m; // already vision format
+        return { role: m.role, content: m.content };
+      });
+
       resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -2596,10 +2733,10 @@ async function callAgent(roomId, slotIndex, agent, history) {
         },
         body: JSON.stringify({
           model: agent.model,
-          max_tokens: 1000,
+          max_tokens: 4000,
           messages: [
             { role: 'system', content: systemPrompt },
-            ...history.map(m => ({ role: m.role, content: m.content }))
+            ...builtMessages
           ]
         })
       });
@@ -2670,6 +2807,34 @@ function getAgentSystem(agent) {
   return overrides[agent.id] || base;
 }
 
+function replayHistory(room, slotIndex) {
+  const chat = document.getElementById(`chat_${room.id}_${slotIndex}`);
+  if (!chat) return;
+
+  const store = room.messages[slotIndex];
+  if (!store || !store.history || store.history.length === 0) return;
+
+  // Clear the default session-ready label
+  chat.innerHTML = '';
+
+  store.history.forEach(msg => {
+    const div = document.createElement('div');
+    const type = msg.role === 'user' ? 'user' : 'agent';
+    div.className = `msg ${type}`;
+    div.innerHTML = `<div class="msg-text">${escHtml(msg.content)}</div>`;
+    chat.appendChild(div);
+  });
+
+  // Restore hot memory to last user message
+  const lastUser = [...store.history].reverse().find(m => m.role === 'user');
+  if (lastUser) {
+    const memEl = document.getElementById(`mem_${room.id}_${slotIndex}`);
+    if (memEl) memEl.textContent = lastUser.content.substring(0, 60) + (lastUser.content.length > 60 ? '...' : '');
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
 function appendMessage(roomId, slotIndex, type, text) {
   const chat = document.getElementById(`chat_${roomId}_${slotIndex}`);
   if (!chat) return;
@@ -2680,12 +2845,42 @@ function appendMessage(roomId, slotIndex, type, text) {
   const now = new Date();
   const time = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
-  msg.innerHTML = `
-    <div class="msg-text">${escHtml(text)}</div>
-    <div class="msg-time">${time}</div>
-  `;
+  const isCopyblock = text.trimStart().toUpperCase().startsWith('COPYBLOCK');
+
+  if (isCopyblock) {
+    const uid = 'cb_' + Date.now() + '_' + slotIndex;
+    msg.innerHTML = `
+      <div class="copyblock-wrap">
+        <div class="copyblock-header">
+          <span class="copyblock-label">✦ COPYBLOCK</span>
+          <button class="copyblock-copy-btn" id="${uid}" onclick="copyCopyblock('${uid}', this)">COPY</button>
+        </div>
+        <div class="copyblock-body">${escHtml(text)}</div>
+      </div>
+      <div class="msg-time">${time}</div>
+    `;
+  } else {
+    msg.innerHTML = `
+      <div class="msg-text">${escHtml(text)}</div>
+      <div class="msg-time">${time}</div>
+    `;
+  }
+
   chat.appendChild(msg);
   chat.scrollTop = chat.scrollHeight;
+}
+
+function copyCopyblock(uid, btn) {
+  const wrap = btn.closest('.copyblock-wrap');
+  const body = wrap.querySelector('.copyblock-body');
+  navigator.clipboard.writeText(body.textContent).then(() => {
+    btn.textContent = 'COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    btn.textContent = 'ERR';
+    setTimeout(() => { btn.textContent = 'COPY'; }, 1500);
+  });
 }
 
 function showTyping(roomId, slotIndex, show) {
@@ -3374,7 +3569,7 @@ async function callAgentArena(roomId, slotIndex, agent, history, topic) {
         body: JSON.stringify({
           system_instruction: { parts: [{ text: arenaSystem }] },
           contents: geminiHistory,
-          generationConfig: { maxOutputTokens: 600 }
+          generationConfig: { maxOutputTokens: 4000 }
         })
       });
       data = await resp.json();
@@ -3388,6 +3583,12 @@ async function callAgentArena(roomId, slotIndex, agent, history, topic) {
         appendMessage(roomId, slotIndex, 'error', data.error.message || 'Gemini API error');
       }
     } else {
+      // Build messages — handle vision (content array) vs text
+      const builtMessages = history.map(m => {
+        if (Array.isArray(m.content)) return m; // already vision format
+        return { role: m.role, content: m.content };
+      });
+
       resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -3398,7 +3599,7 @@ async function callAgentArena(roomId, slotIndex, agent, history, topic) {
         },
         body: JSON.stringify({
           model: agent.model,
-          max_tokens: 600,
+          max_tokens: 4000,
           messages: [
             { role: 'system', content: arenaSystem },
             ...history.map(m => ({ role: m.role, content: m.content }))
